@@ -1,0 +1,51 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=3221
+
+PLEASE NOTE that in version 1.3 default name of project settings directory has been changed from ".vim" to ".vimprj" to avoid conflicts with standard ~/.vim directory. If you are using this feature and your project settings dir is ".vim", please rename it.
+--------------------------------------------------------------
+
+You can use this plugin to automatically index your project files using ctags. This can be very useful when it's used together with plugins omnicppcomplete (for c, c++ development), code_complete.vim and other plugins that using tags.  You also will be able to jump from function call to its definition just by pressing Ctrl-] or g]
+
+This plugin can work as add-on for project.tar.gz plugin ( http://www.vim.org/scripts/script.php?script_id=69 ). Indexer reads project file, parses it and builds tags for all files in project. But it also works fine without project.tar.gz.
+
+
+Actually, if you are using project.tar.gz plugin and your projects file is default (~/.vimprojects), then setting Indexer up is very easily: you can just copy indexer.vim to your plugins directory, start Vim and open any file from your project.  The indexer plugin will detect that opened file is a file from project and automatically start ctags for each file in this project.  It also set &path and &tags options for Vim.
+
+If you are using project.tar.gz, but you have another projects file, you should set option g:indexer_projectsSettingsFilename in your vimrc.
+
+If you don't use project.tar.gz then you can use ".indexer_files" to define projects and files to index.  Default location of this file is "~/.indexer_files". You can change it by modifying variable g:indexer_indexerListFilename
+
+Syntax of this file is simple, propably the best way to explain it is to show an example:
+--------------------- example ~/.indexer_files -----------------------
+[CoolProject] 
+ 
+/home/user/myproject/src/*.c 
+/home/user/myproject/src/*.h 
+/home/user/myproject/inc/*.h 
+ 
+[AnotherProject] 
+ 
+/home/user/myproject2**/*.c 
+/home/user/myproject2**/*.h 
+-------------------------------------------------------------------------------
+
+If you have many projects and you are lazy to put every project in
+this file, you can put in your ~/.indexer_files something like this:
+
+--------------------- example ~/.indexer_files -----------------------
+[PROJECTS_PARENT filter="*.c *.h *.cpp"]
+~/workspace
+-------------------------------------------------------------------------------
+
+The keyword is PROJECTS_PARENT.
+In this way, every directory in ~/workspace will be interpreted as separate
+project, and you can open any file from any project in ~/workspace, and the 
+whole proper project will be indexed.
+
+
+And, finally, it can autodetect project root. So, you can move your project to another place in filesystem, and all files will be indexed anyway.  More detailed help see in options, variable "g:indexer_lookForProjectDir".
+
+You need ctags to be installed to make this plugin work. http://ctags.sourceforge.net/
+
+I have tested it both on Linux and Windows, in Vim 7.3
+If you have any troubles using this plugin, please email me.
+

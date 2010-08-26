@@ -1,0 +1,210 @@
+*indexer.txt* Plugin for automatically index project files using ctags
+              For Vim 7.x version
+
+
+
+                     By Dmitry Frank
+		      dimon.frank email-at-sign gmail.com
+
+
+                                          *indexer* *indexer-plugin*
+	Contents:
+
+         Options.....................|indexer-options|
+         Commands...................|indexer-commands|
+
+You can use this plugin to automatically index your project files 
+using ctags. This can be very useful when using together with plugins
+omnicppcomplete (for c, c++ development), code_complete.vim
+and other plugins that using tags.
+Also you will able to jump from function call to its definition 
+just by pressing Ctrl-] or g]
+
+This plugin can work with project.vim plugin, but it
+can also work without this plugin.
+
+Actually, if you using project.vim plugin and you projects file is
+default (~/.vimprojects), then installing is very easy: 
+you can just copy indexer.vim to your plugins directory, start Vim 
+and open any file from your project.
+The indexer plugin will detect that opened file from project 
+and automatically start ctags for each file in this project. 
+It also set &path and &tags options for Vim.
+
+If you using project.vim but you have another projects file,
+you should set option g:indexer_projectsSettingsFilename in your
+vimrc. See |indexer-options| for details
+
+If you aren't using project.vim then you can use ".indexer_files" to 
+define projects to index. 
+Default location of this file is "~/.indexer_files". You can change
+it by modifying variable g:indexer_indexerListFilename
+
+Note that this file overrides "~/.vimprojects". If both files exists
+only "~/.indexer_files" will be used.
+
+Syntax of this file is very easy. Propably the best way to explain it
+is show an example.
+
+Example file "~/.indexer_files" >
+   [CoolProject]
+
+   /home/user/myproject/src/*.c
+   /home/user/myproject/src/*.h
+   /home/user/myproject/inc/*.h
+
+   [AnotherProject]
+
+   /home/user/myproject2**/*.c
+   /home/user/myproject2**/*.h
+
+
+I think, there's all obvious:
+there's two projects: CoolProject and AnotherProject.
+in CoolProject there's all *.c files in "myproject/src" and all header 
+files in "myproject/inc". in AnotherProject there's both *.c and *.h 
+files in "myproject2" and all subdirectories recursively. 
+( "**" means recursively )
+It's able to use environment variables in your paths.
+
+You can define the same AnotherProject simplier: 
+      >
+   [AnotherProject]
+
+   /home/user/myproject2**/*.[ch]
+
+And, finally, it can autodetect project root. So, you can move your 
+project to another place in filesystem, and all files will indexed anyway.
+More detailed see in options, variable "g:indexer_lookForProjectDir".
+
+========================================================================
+OPTIONS                                                  *indexer-options*
+
+You can set these variables in your vimrc file before the plugin is loaded to
+change its default behavior
+
+g:indexer_lookForProjectDir (default: 1)
+
+   if on, then plugin will recursively-up search for ".vim" directory.
+   If it will be found, then plugin will source all "*.vim" files in it,
+   and also will set environment variable $INDEXER_PROJECT_ROOT to
+   directory in which is ".vim" directory.
+   
+   Your directory tree example:
+
+      | home
+      | | user
+      | | | myproject
+      | | | | src
+      | | | | |-file1.c
+      | | | | |-file2.c
+      | | | | |-file3.c
+      | | | | |
+      | | | | inc
+      | | | | |-file1.h
+      | | | | |-file2.h
+      | | | | |-file3.h
+      | | | | |
+      | | | | .vim
+      | | | | |-conf.vim
+
+   For example, you typing: >
+      $ gvim /home/user/myproject/src/file1.c
+----
+
+   Then indexer will detect your /home/user/myproject/.vim directory
+   and source all files *.vim from it,
+   and set $INDEXER_PROJECT_ROOT="/home/user/myproject"
+
+   so, you can define any settings that are individual for
+   your project, such as another .vimprojects file, or any other.
+
+   This is great for people like me, that likes when ALL project files
+   is in only one directory.
+
+   When i need to copy project to another computer i just copying the
+   whole folder, and all is done. I using $INDEXER_PROJECT_ROOT variable
+   in my .vimprojects file, so that i can put project in any place in
+   filesystem, and all files will be indexed, because 
+   $INDEXER_PROJECT_ROOT will be always my real project root.
+
+g:indexer_dirNameForSearch (default: ".vim")
+
+   directory name with project settings for search (".vim" by default)
+
+g:indexer_recurseUpCount (default: 10)
+
+   count of recurse-up for search ".vim" directory
+
+g:indexer_indexerListFilename (default: "~/.indexer_files")
+
+   indexer filename. If this file exists then projects file are ignored.
+
+g:indexer_projectsSettingsFilename (default: "~/.vimprojects")
+
+   project filename. (the project file that plugin project.vim using)
+
+g:indexer_projectName (default: '')
+
+   if you don't wand to index any project, you can define one name.
+   If it is empty, then indexes any found projects.
+   By default is empty.
+
+g:indexer_enableWhenProjectDirFound (default: 1)
+
+   If this option is set, then if gvim started from project directory, this project
+   will be indexed. Otherwise project will be indexed only if there's file 
+   from this project opened 
+
+g:indexer_tagsDirname (default: "~/.vimtags")
+
+   directory to save tags file. (this is directory because there's propably
+   several files in next versions)
+
+   Note: If ".vim" directory is found, then this option is ignored and tags
+   directory becomes ".vim/tags"   
+
+g:indexer_ctagsCommandLineOptions
+
+   ctags command line options. By default is: 
+   "--c++-kinds=+p+l --fields=+iaS --extra=+q"
+
+g:indexer_ctagsJustAppendTagsAtFileSave (default: 1)
+
+   when there's project file saving, we need to update tags.
+   If this option is on, then ctags will be started just for 
+   current file with "-a" key, otherwise tags for all project 
+   files will be rebuild.
+
+   There is different sides:
+   If just append tags, then old tags will not be removed until 
+   you rebuild all tags by typing ":IndexerRebuild" or just restart 
+   Vim. If rebuild tags every time, it would take long time 
+   (depending on project size, of course)
+
+   By default this option is on.
+
+========================================================================
+COMMANDS                                                  *indexer-commands*
+
+:IndexerInfo
+   
+   prints information about current state of plugin, such as projects file
+   using, files not found, and other.
+
+   The first thing you should do if plugin doesn't work is type this command :)
+   
+:IndexerFiles
+
+   prints list of indexed files
+
+:IndexerRebuild
+
+   rebuild tags for all files in project
+
+:IndexerFilesAvail
+
+   prints list of all available files that has been read from projects file
+
+
+ vim:ft=help:tw=78:  
