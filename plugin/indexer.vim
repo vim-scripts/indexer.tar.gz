@@ -1,8 +1,8 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: Wed 25 Aug 2010
-" Version:     1.2
+" Last Change: 30 Aug 2010
+" Version:     1.3
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -187,8 +187,8 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
       endwhile
 
       " searching for filename
-      if (l:sLine =~ '^[^={}]*$')
-         " here we are found something like filename
+      if (l:sLine =~ '^[^={}]*$' && l:sLine !~ '^\s*$')
+         " here we found something like filename
          "
          if (l:boolInNeededProject && l:iOpenedBraces > l:iOpenedBracesAtProjectStart)
             " we are in needed project
@@ -469,7 +469,7 @@ function! s:IndexerInit()
    endif
 
    if !exists('g:indexer_dirNameForSearch')
-      let g:indexer_dirNameForSearch = '.vim'
+      let g:indexer_dirNameForSearch = '.vimprj'
    endif
 
    if !exists('g:indexer_recurseUpCount')
@@ -521,8 +521,8 @@ function! s:IndexerInit()
    endif
 
 
-   " actual tags dirname. If .vim directory will be found then this tags
-   " dirname will be /path/to/dir/.vim/tags
+   " actual tags dirname. If .vimprj directory will be found then this tags
+   " dirname will be /path/to/dir/.vimprj/tags
    let s:tagsDirname = g:indexer_tagsDirname 
    let g:indexer_indexedProjects = []
    let s:sMode = ''
@@ -532,7 +532,7 @@ function! s:IndexerInit()
    let s:boolIndexingModeOn = 0
 
    if g:indexer_lookForProjectDir
-      " need to look for .vim directory
+      " need to look for .vimprj directory
 
       let l:i = 0
       let l:sCurPath = ''
@@ -550,10 +550,10 @@ function! s:IndexerInit()
       if $INDEXER_PROJECT_ROOT != ''
          " project root was found.
          "
-         " set directory for tags in .vim dir
+         " set directory for tags in .vimprj dir
          let s:tagsDirname = $INDEXER_PROJECT_ROOT.'/'.g:indexer_dirNameForSearch.'/tags'
 
-         " sourcing all *vim files in .vim dir
+         " sourcing all *vim files in .vimprj dir
          let l:lSourceFilesList = split(glob($INDEXER_PROJECT_ROOT.'/'.g:indexer_dirNameForSearch.'/*vim'), '\n')
          let l:sThisFile = expand('%:p')
          for l:sFile in l:lSourceFilesList

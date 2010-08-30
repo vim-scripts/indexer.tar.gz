@@ -14,28 +14,29 @@
          Commands...................|indexer-commands|
 
 You can use this plugin to automatically index your project files 
-using ctags. This can be very useful when using together with plugins
+using ctags. This can be very useful when it's used together with plugins
 omnicppcomplete (for c, c++ development), code_complete.vim
 and other plugins that using tags.
-Also you will able to jump from function call to its definition 
+You also will able to jump from function call to its definition 
 just by pressing Ctrl-] or g]
 
-This plugin can work with project.vim plugin, but it
-can also work without this plugin.
+This plugin can work as add-on for project.tar.gz plugin. 
+Indexer reads project file, parses it and builds tags for all files 
+in project. But it can also work without this plugin.
 
 Actually, if you using project.vim plugin and you projects file is
-default (~/.vimprojects), then installing is very easy: 
+default (~/.vimprojects), then setting indexer up is very easily: 
 you can just copy indexer.vim to your plugins directory, start Vim 
 and open any file from your project.
 The indexer plugin will detect that opened file from project 
 and automatically start ctags for each file in this project. 
 It also set &path and &tags options for Vim.
 
-If you using project.vim but you have another projects file,
+If you are using project.vim but you have another projects file,
 you should set option g:indexer_projectsSettingsFilename in your
 vimrc. See |indexer-options| for details
 
-If you aren't using project.vim then you can use ".indexer_files" to 
+If you don't use project.vim then you can use ".indexer_files" to 
 define projects to index. 
 Default location of this file is "~/.indexer_files". You can change
 it by modifying variable g:indexer_indexerListFilename
@@ -85,10 +86,10 @@ change its default behavior
 
 g:indexer_lookForProjectDir (default: 1)
 
-   if on, then plugin will recursively-up search for ".vim" directory.
+   if on, then plugin will recursively-up search for ".vimprj" directory.
    If it will be found, then plugin will source all "*.vim" files in it,
    and also will set environment variable $INDEXER_PROJECT_ROOT to
-   directory in which is ".vim" directory.
+   directory in which is ".vimprj" directory.
    
    Your directory tree example:
 
@@ -105,14 +106,14 @@ g:indexer_lookForProjectDir (default: 1)
       | | | | |-file2.h
       | | | | |-file3.h
       | | | | |
-      | | | | .vim
+      | | | | .vimprj
       | | | | |-conf.vim
 
    For example, you typing: >
       $ gvim /home/user/myproject/src/file1.c
 ----
 
-   Then indexer will detect your /home/user/myproject/.vim directory
+   Then indexer will detect your /home/user/myproject/.vimprj directory
    and source all files *.vim from it,
    and set $INDEXER_PROJECT_ROOT="/home/user/myproject"
 
@@ -128,13 +129,13 @@ g:indexer_lookForProjectDir (default: 1)
    filesystem, and all files will be indexed, because 
    $INDEXER_PROJECT_ROOT will be always my real project root.
 
-g:indexer_dirNameForSearch (default: ".vim")
+g:indexer_dirNameForSearch (default: ".vimprj")
 
-   directory name with project settings for search (".vim" by default)
+   directory name with project settings for search (".vimprj" by default)
 
 g:indexer_recurseUpCount (default: 10)
 
-   count of recurse-up for search ".vim" directory
+   count of recurse-up for search ".vimprj" directory
 
 g:indexer_indexerListFilename (default: "~/.indexer_files")
 
@@ -161,8 +162,8 @@ g:indexer_tagsDirname (default: "~/.vimtags")
    directory to save tags file. (this is directory because there's propably
    several files in next versions)
 
-   Note: If ".vim" directory is found, then this option is ignored and tags
-   directory becomes ".vim/tags"   
+   Note: If ".vimprj" directory is found, then this option is ignored and tags
+   directory becomes ".vimprj/tags"   
 
 g:indexer_ctagsCommandLineOptions
 
