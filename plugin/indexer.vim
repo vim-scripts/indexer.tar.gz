@@ -2,7 +2,7 @@
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
 " Last Change: 30 Aug 2010
-" Version:     1.3
+" Version:     1.4
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -20,25 +20,20 @@ function! s:ParsePath(sPath)
    return l:sPath
 endfunction
 
-
 " s:Trim(sString)
 " trims spaces from begin and end of string
 function! s:Trim(sString)
    return substitute(substitute(a:sString, '^\s\+', '', ''), '\s\+$', '', '')
 endfunction
-   
+
 " s:IsAbsolutePath(path) <<<
-"   this function from project.vim is written by Aric Blumer. 
+"   this function from project.vim is written by Aric Blumer.
 "   Returns true if filename has an absolute path.
 function! s:IsAbsolutePath(path)
    if a:path =~ '^ftp:' || a:path =~ '^rcp:' || a:path =~ '^scp:' || a:path =~ '^http:'
       return 2
    endif
-   if a:path =~ '\$'
-      let path=expand(a:path) " Expand any environment variables that might be in the path
-   else
-      let path=a:path
-   endif
+   let path=expand(a:path) " Expand any environment variables that might be in the path
    if path[0] == '/' || path[0] == '~' || path[0] == '\\' || path[1] == ':'
       return 1
    endif
@@ -55,17 +50,15 @@ function! s:GetDirsAndFilesFromIndexerFile(indexerFile, projectName)
    let l:dResult = {}
 
    for l:sLine in l:aLines
-      
-      
-   
+
       " if line is not empty
       if l:sLine !~ '^\s*$' && l:sLine !~ '^\s*\#.*$'
 
          " look for project name [PrjName]
-         let myMatch = matchlist(l:sLine, '^\s*\[\([^\]]\+\)\]') 
+         let myMatch = matchlist(l:sLine, '^\s*\[\([^\]]\+\)\]')
 
          if (len(myMatch) > 0)
-            
+
             if (a:projectName != '')
                if (myMatch[1] == a:projectName)
                   let l:boolInNeededProject = 1
@@ -90,8 +83,6 @@ function! s:GetDirsAndFilesFromIndexerFile(indexerFile, projectName)
             endif
          endif
       endif
-
-
 
    endfor
 
@@ -126,6 +117,9 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
    let l:sCurProjName = ''
 
    for l:sLine in l:aLines
+      " ignoring comments
+      if l:sLine =~ '^#' | continue | endif
+
       " searching for closing brace { }
       let sTmpLine = l:sLine
       while (sTmpLine =~ '}')
@@ -142,7 +136,7 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
          let sTmpLine = substitute(sTmpLine, '}', '', '')
       endwhile
 
-      " searching for blabla=qweqwe 
+      " searching for blabla=qweqwe
       let myMatch = matchlist(l:sLine, '\s*\(.\{-}\)=\(.\{-}\)\\\@<!\(\s\|$\)')
       if (len(myMatch) > 0)
          " now we found start of project folder or subfolder
@@ -160,9 +154,7 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
          endif
 
          let l:sLastFoundPath = myMatch[2]
-         if l:sLastFoundPath =~ '\$'
-            let l:sLastFoundPath=expand(l:sLastFoundPath) " Expand any environment variables that might be in the path
-         endif
+         let l:sLastFoundPath = expand(l:sLastFoundPath) " Expand any environment variables that might be in the path
          let l:sLastFoundPath = s:ParsePath(l:sLastFoundPath)
 
       endif
@@ -192,7 +184,7 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
          "
          if (l:boolInNeededProject && l:iOpenedBraces > l:iOpenedBracesAtProjectStart)
             " we are in needed project
-            let l:sCurFilename = s:ParsePath(l:aPaths[len(l:aPaths) - 1].'/'.s:Trim(l:sLine))
+            let l:sCurFilename = expand(s:ParsePath(l:aPaths[len(l:aPaths) - 1].'/'.s:Trim(l:sLine)))
             if (filereadable(l:sCurFilename))
                " file readable! adding it
                call add(l:dResult[l:sCurProjName].files, l:sCurFilename)
@@ -203,13 +195,10 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
 
       endif
 
-      "
-      "
    endfor
 
    return l:dResult
 endfunction
-
 
 " returns whether or not file exists in list
 function! s:IsFileExistsInList(aList, sFilename)
@@ -220,7 +209,7 @@ function! s:IsFileExistsInList(aList, sFilename)
    return 0
 endfunction
 
-" updating tags using ctags. 
+" updating tags using ctags.
 " if boolAppend then just appends existing tags file with new tags from
 " current file (%)
 function! s:UpdateTags(boolAppend)
@@ -356,8 +345,6 @@ function! s:ParseProjectSettingsFile()
    endif
 
    " let's found what files we should to index.
-   "     
-
    let s:iTotalFilesAvailableCnt = 0
    if (!s:boolIndexingModeOn)
       for l:sKey in keys(s:dParseAll)
@@ -366,7 +353,7 @@ function! s:ParseProjectSettingsFile()
          if ((g:indexer_enableWhenProjectDirFound && <SID>IsFileExistsInList(s:dParseAll[l:sKey].paths, expand('%:p:h'))) || (<SID>IsFileExistsInList(s:dParseAll[l:sKey].files, expand('%:p'))))
             " user just opened file from project l:sKey. We should add it to
             " result lists
-            
+
             " adding name of this project to g:indexer_indexedProjects
             call add(g:indexer_indexedProjects, l:sKey)
 
@@ -388,7 +375,7 @@ function! s:ParseProjectSettingsFile()
       if (len(l:dParse.files) > 0 || len(l:dParse.paths) > 0)
 
          let s:boolIndexingModeOn = 1
-         
+
          " creating auto-refresh index at project file save
          augroup Indexer_SavPrjFile
          autocmd! Indexer_SavPrjFile BufWritePost
@@ -400,14 +387,9 @@ function! s:ParseProjectSettingsFile()
             let l:sPrjFile = substitute(g:indexer_projectsSettingsFilename, '^.*[\\/]\([^\\/]\+\)$', '\1', '')
             exec 'autocmd Indexer_SavPrjFile BufWritePost '.l:sPrjFile.' call <SID>ParseProjectSettingsFile()'
          endif
-         
-
-
-
-
 
          call <SID>ApplyProjectSettings(l:dParse)
-         
+
          let l:iNonExistingCnt = len(s:lNotExistFiles)
          if (l:iNonExistingCnt > 0)
             if l:iNonExistingCnt < 100
@@ -505,8 +487,6 @@ function! s:IndexerInit()
    endif
 
 
-
-
    if exists(':IndexerInfo') != 2
        command -nargs=? -complete=file IndexerInfo call <SID>IndexerInfo()
    endif
@@ -523,7 +503,7 @@ function! s:IndexerInit()
 
    " actual tags dirname. If .vimprj directory will be found then this tags
    " dirname will be /path/to/dir/.vimprj/tags
-   let s:tagsDirname = g:indexer_tagsDirname 
+   let s:tagsDirname = g:indexer_tagsDirname
    let g:indexer_indexedProjects = []
    let s:sMode = ''
    let s:lFileList = []
@@ -568,7 +548,6 @@ function! s:IndexerInit()
    call s:ParseProjectSettingsFile()
 
 endfunction
-
 
 call s:IndexerInit()
 
