@@ -74,6 +74,19 @@ You can define the same AnotherProject simplier:
 
    /home/user/myproject2**/*.[ch]
 
+If you have many projects and you are lazy to put every project in
+this file, you can put in your ~/.indexer_files something like this:
+
+      >
+   [PROJECTS_PARENT filter="*.c *.h *.cpp"]
+
+   ~/workspace
+
+The keyword is PROJECTS_PARENT.
+In this way, every directory in ~/workspace will be interpreted as project,
+and you can open any file from any project in ~/workspace, and the 
+whole proper project will be indexed.
+
 And, finally, it can autodetect project root. So, you can move your 
 project to another place in filesystem, and all files will indexed anyway.
 More detailed see in options, variable "g:indexer_lookForProjectDir".
@@ -202,10 +215,5 @@ COMMANDS                                                  *indexer-commands*
 :IndexerRebuild
 
    rebuild tags for all files in project
-
-:IndexerFilesAvail
-
-   prints list of all available files that has been read from projects file
-
 
  vim:ft=help:tw=78:  
