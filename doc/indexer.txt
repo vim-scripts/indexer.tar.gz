@@ -198,6 +198,14 @@ g:indexer_ctagsJustAppendTagsAtFileSave (default: 1)
 
    By default this option is on.
 
+g:indexer_ctagsDontSpecifyFilesIfPossible (default: 0)
+
+   This option using only when using indexer_files.
+   When it is on, ctags starts just for project root
+   directory with "-R" key.
+   The problem of this method is the all project paths 
+   will not be set in Vim.
+
 ========================================================================
 COMMANDS                                                  *indexer-commands*
 

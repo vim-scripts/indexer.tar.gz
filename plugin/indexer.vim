@@ -1,8 +1,8 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: 30 Aug 2010
-" Version:     1.4
+" Last Change: 01 Sep 2010
+" Version:     1.6
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -121,7 +121,7 @@ function! s:GetDirsAndFilesFromIndexerList(aLines, projectName, dExistsResult)
                   let l:sCurProjName = 'noname'
                   let l:dResult[l:sCurProjName] = { 'files': [], 'paths': [], 'not_exist': [] }
                endif
-               if (!g:indexer_enableWhenProjectDirFound || s:indexer_projectName != '')
+               if (!g:indexer_ctagsDontSpecifyFilesIfPossible && s:indexer_projectName != '')
                   " adding every file.
                   let l:dResult[l:sCurProjName].files = <SID>ConcatLists(l:dResult[l:sCurProjName].files, split(expand(substitute(<SID>Trim(l:sLine), '\\\*\*', '**', 'g')), '\n'))
                else
@@ -136,7 +136,7 @@ function! s:GetDirsAndFilesFromIndexerList(aLines, projectName, dExistsResult)
    endfor
 
    " build paths
-   if (!g:indexer_enableWhenProjectDirFound || s:indexer_projectName != '')
+   if (!g:indexer_ctagsDontSpecifyFilesIfPossible && s:indexer_projectName != '')
       for l:sKey in keys(l:dResult)
          let l:lPaths = []
          for l:sFile in l:dResult[l:sKey].files
@@ -273,14 +273,11 @@ endfunction
 " if boolAppend then just appends existing tags file with new tags from
 " current file (%)
 function! s:UpdateTags(boolAppend)
-   " multiple files, call from Vim
-   "for l:sFile in s:lFileList
-      "let l:cmd = 'ctags -f '.s:tagsDirname.'/'.substitute(l:sFile, '[\\/:]', '%', 'g').' '.g:indexer_ctagsCommandLineOptions.' '.l:sFile
-      "let l:resp = system(l:cmd)
-   "endfor
 
    " one tags file
-   let l:sTagsFile = s:tagsDirname.'/tags'
+   
+   let l:sTagsFileWOPath = substitute(join(g:indexer_indexedProjects, '_'), '\s', '_', 'g')
+   let l:sTagsFile = s:tagsDirname.'/'.l:sTagsFileWOPath
    if !isdirectory(s:tagsDirname)
       call mkdir(s:tagsDirname, "p")
    endif
@@ -291,6 +288,8 @@ function! s:UpdateTags(boolAppend)
       call remove(s:lNotExistFiles, index(s:lNotExistFiles, l:sSavedFile))
       call add(s:lFileList, l:sSavedFile)
    endif
+
+   let l:sRecurseCode = ''
 
    if (a:boolAppend && filereadable(l:sTagsFile))
       let l:sAppendCode = '-a'
@@ -305,28 +304,31 @@ function! s:UpdateTags(boolAppend)
       let l:sAppendCode = ''
       let l:sFiles = ''
       let l:sFile = ''
-      for l:sFile in s:lFileList
-         let l:sFiles = l:sFiles.' "'.l:sFile.'"'
-      endfor
+      if (g:indexer_ctagsDontSpecifyFilesIfPossible && s:sMode == 'IndexerFile')
+         let l:sRecurseCode = '-R'
+         for l:sPath in s:lPathList
+            let l:sFiles = l:sFiles.' "'.l:sPath.'"'
+         endfor
+      else
+         for l:sFile in s:lFileList
+            let l:sFiles = l:sFiles.' "'.l:sFile.'"'
+         endfor
+      endif
    endif
 
    if l:sFiles != ''
-      if (has('win32') || has('win64'))
+      "if (has('win32') || has('win64'))
          let l:sTagsFile = '"'.l:sTagsFile.'"'
-      endif
-      " here i tried to remove all lines with current filename in tags file
-      "if (l:sAppendCode != '')
-         "let l:cmd = 'sed -i -e "/'.substitute(substitute(expand('%:p'), "\\([\\\\]\\)", '\\\\\\\\', 'g'), "\\([.:]\\)", '\\\1', 'g').'/d" '.l:sTagsFile
-         "call system(l:cmd)
       "endif
 
       if (has('win32') || has('win64'))
-         let l:cmd = 'ctags -f '.l:sTagsFile.' '.l:sAppendCode.' '.g:indexer_ctagsCommandLineOptions.' '.l:sFiles
+         let l:cmd = 'ctags -f '.l:sTagsFile.' '.l:sRecurseCode.' '.l:sAppendCode.' '.g:indexer_ctagsCommandLineOptions.' '.l:sFiles
       else
-         let l:cmd = 'ctags -f '.l:sTagsFile.' '.l:sAppendCode.' '.g:indexer_ctagsCommandLineOptions.' '.l:sFiles.' &'
+         let l:cmd = 'ctags -f '.l:sTagsFile.' '.l:sRecurseCode.' '.l:sAppendCode.' '.g:indexer_ctagsCommandLineOptions.' '.l:sFiles.' &'
       endif
+
       let l:resp = system(l:cmd)
-      exec 'set tags='.substitute(s:tagsDirname, ' ', '\\\\\\ ', 'g').'/tags'
+      exec 'set tags='.substitute(s:tagsDirname.'/'.l:sTagsFileWOPath, ' ', '\\\\\\ ', 'g')
    endif
 
    "multiple files, calls from bat file
@@ -353,6 +355,7 @@ function! s:ApplyProjectSettings(dParse)
    endfor
 
    let s:lFileList = a:dParse.files
+   let s:lPathList = a:dParse.paths
    let s:lNotExistFiles = a:dParse.not_exist
 
    augroup Indexer_SavSrcFile
@@ -418,7 +421,11 @@ function! s:ParseProjectSettingsFile()
       for l:sKey in keys(s:dParseAll)
          if (<SID>IsFileExistsInList(s:dParseAll[l:sKey].paths, expand('%:p:h').l:sCurPath))
             let s:indexer_projectName = l:sKey
-            call <SID>GetDirsAndFilesFromAvailableFile()
+            if !(s:sMode == 'IndexerFile' && g:indexer_ctagsDontSpecifyFilesIfPossible)
+               call <SID>GetDirsAndFilesFromAvailableFile()
+            else
+               call add(g:indexer_indexedProjects, l:sKey)
+            endif
             break
          endif
       endfor
@@ -426,20 +433,22 @@ function! s:ParseProjectSettingsFile()
       let l:i = l:i + 1
    endwhile
 
-   let s:iTotalFilesAvailableCnt = 0
-   if (!s:boolIndexingModeOn)
-      for l:sKey in keys(s:dParseAll)
-         let s:iTotalFilesAvailableCnt = s:iTotalFilesAvailableCnt + len(s:dParseAll[l:sKey].files)
+   if !(s:sMode == 'IndexerFile' && g:indexer_ctagsDontSpecifyFilesIfPossible)
+      let s:iTotalFilesAvailableCnt = 0
+      if (!s:boolIndexingModeOn)
+         for l:sKey in keys(s:dParseAll)
+            let s:iTotalFilesAvailableCnt = s:iTotalFilesAvailableCnt + len(s:dParseAll[l:sKey].files)
 
-         if ((g:indexer_enableWhenProjectDirFound && <SID>IsFileExistsInList(s:dParseAll[l:sKey].paths, expand('%:p:h'))) || (<SID>IsFileExistsInList(s:dParseAll[l:sKey].files, expand('%:p'))))
-            " user just opened file from project l:sKey. We should add it to
-            " result lists
+            if ((g:indexer_enableWhenProjectDirFound && <SID>IsFileExistsInList(s:dParseAll[l:sKey].paths, expand('%:p:h'))) || (<SID>IsFileExistsInList(s:dParseAll[l:sKey].files, expand('%:p'))))
+               " user just opened file from project l:sKey. We should add it to
+               " result lists
 
-            " adding name of this project to g:indexer_indexedProjects
-            call add(g:indexer_indexedProjects, l:sKey)
+               " adding name of this project to g:indexer_indexedProjects
+               call add(g:indexer_indexedProjects, l:sKey)
 
-         endif
-      endfor
+            endif
+         endfor
+      endif
    endif
 
    " build final list of files, paths and non-existing files
@@ -502,8 +511,11 @@ function! s:IndexerInfo()
       echo '* Filelist: Unknown'
    endif
    echo '* Projects indexed: '.join(g:indexer_indexedProjects, ', ')
-   echo "* Files indexed: there's ".len(s:lFileList).' files. Type :IndexerFiles to list'
-   echo "* Files not found: there's ".len(s:lNotExistFiles).' non-existing files. '.join(s:lNotExistFiles, ', ')
+   if !(s:sMode == 'IndexerFile' && g:indexer_ctagsDontSpecifyFilesIfPossible)
+      echo "* Files indexed: there's ".len(s:lFileList).' files. Type :IndexerFiles to list'
+      echo "* Files not found: there's ".len(s:lNotExistFiles).' non-existing files. '.join(s:lNotExistFiles, ', ')
+   endif
+
    echo '* Paths: '.&path
    echo '* Tags file: '.&tags
    echo '* Project root: '.($INDEXER_PROJECT_ROOT != '' ? $INDEXER_PROJECT_ROOT : 'not found').'  (Project root is a directory which contains "'.g:indexer_dirNameForSearch.'" directory)'
@@ -538,7 +550,7 @@ function! s:IndexerInit()
       while (l:i < g:indexer_recurseUpCount)
          if (isdirectory(expand('%:p:h').l:sCurPath.'/'.g:indexer_dirNameForSearch))
             let $INDEXER_PROJECT_ROOT = simplify(expand('%:p:h').l:sCurPath)
-            exec 'cd '.$INDEXER_PROJECT_ROOT
+            exec 'cd '.substitute($INDEXER_PROJECT_ROOT, ' ', '\\ ', 'g')
             break
          endif
          let l:sCurPath = l:sCurPath.'/..'
@@ -611,6 +623,10 @@ endif
 
 if !exists('g:indexer_ctagsJustAppendTagsAtFileSave')
    let g:indexer_ctagsJustAppendTagsAtFileSave = 1
+endif
+
+if !exists('g:indexer_ctagsDontSpecifyFilesIfPossible')
+   let g:indexer_ctagsDontSpecifyFilesIfPossible = '0'
 endif
 
 let s:indexer_projectName = g:indexer_projectName
