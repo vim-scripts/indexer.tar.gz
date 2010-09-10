@@ -1,8 +1,8 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: 01 Sep 2010
-" Version:     1.6
+" Last Change: 11 Sep 2010
+" Version:     1.7
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -126,7 +126,7 @@ function! s:GetDirsAndFilesFromIndexerList(aLines, projectName, dExistsResult)
                   let l:dResult[l:sCurProjName].files = <SID>ConcatLists(l:dResult[l:sCurProjName].files, split(expand(substitute(<SID>Trim(l:sLine), '\\\*\*', '**', 'g')), '\n'))
                else
                   " adding just paths. (much more faster)
-                  let l:dResult[l:sCurProjName].paths = <SID>ConcatLists(l:dResult[l:sCurProjName].paths, [<SID>ParsePath(substitute(substitute(substitute(l:sLine, '^\(.*\)[\\/][^\\/]\+$', '\1', 'g'), '^\([^*]\+\).*$', '\1', ''), '[\\/]$', '', ''))])
+                  let l:dResult[l:sCurProjName].paths = <SID>ConcatLists(l:dResult[l:sCurProjName].paths, [<SID>ParsePath(expand(substitute(substitute(substitute(l:sLine, '^\(.*\)[\\/][^\\/]\+$', '\1', 'g'), '^\([^*]\+\).*$', '\1', ''), '[\\/]$', '', '')))])
                endif
             endif
 
@@ -180,6 +180,7 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
       " ignoring comments
       if l:sLine =~ '^#' | continue | endif
 
+      let l:sLine = substitute(l:sLine, '#.\+$', '' ,'')
       " searching for closing brace { }
       let sTmpLine = l:sLine
       while (sTmpLine =~ '}')
@@ -248,7 +249,7 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
             if (filereadable(l:sCurFilename))
                " file readable! adding it
                call add(l:dResult[l:sCurProjName].files, l:sCurFilename)
-            else
+            elseif (!isdirectory(l:sCurFilename))
                call add(l:dResult[l:sCurProjName].not_exist, l:sCurFilename)
             endif
          endif
