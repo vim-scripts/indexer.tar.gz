@@ -1,8 +1,8 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: 11 Sep 2010
-" Version:     1.7
+" Last Change: 26 Sep 2010
+" Version:     1.8
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -17,6 +17,12 @@ function! s:ParsePath(sPath)
       let l:sPath = substitute(a:sPath, '\', '/', 'g')
    endif
    let l:sPath = simplify(l:sPath)
+
+   " removing last "/" or "\"
+   let l:sLastSymb = strpart(l:sPath, (strlen(l:sPath) - 1), 1)
+   if (l:sLastSymb == '/' || l:sLastSymb == '\')
+      let l:sPath = strpart(l:sPath, 0, (strlen(l:sPath) - 1))
+   endif
    return l:sPath
 endfunction
 
@@ -215,6 +221,9 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
          endif
 
          let l:sLastFoundPath = myMatch[2]
+         " ADDED! Jkooij
+         " Strip the path of surrounding " characters, if there are any
+         let l:sLastFoundPath = substitute(l:sLastFoundPath, "\"\\(.*\\)\"", "\\1", "g")
          let l:sLastFoundPath = expand(l:sLastFoundPath) " Expand any environment variables that might be in the path
          let l:sLastFoundPath = s:ParsePath(l:sLastFoundPath)
 
@@ -245,7 +254,11 @@ function! s:GetDirsAndFilesFromProjectFile(projectFile, projectName)
          "
          if (l:boolInNeededProject && (!g:indexer_enableWhenProjectDirFound || s:indexer_projectName != '') && l:iOpenedBraces > l:iOpenedBracesAtProjectStart)
             " we are in needed project
-            let l:sCurFilename = expand(s:ParsePath(l:aPaths[len(l:aPaths) - 1].'/'.s:Trim(l:sLine)))
+            "let l:sCurFilename = expand(s:ParsePath(l:aPaths[len(l:aPaths) - 1].'/'.s:Trim(l:sLine)))
+            " CHANGED! Jkooij
+            " expand() will change slashes based on 'shellslash' flag,
+            " so call s:ParsePath() on expand() result for consistent slashes
+            let l:sCurFilename = s:ParsePath(expand(l:aPaths[len(l:aPaths) - 1].'/'.s:Trim(l:sLine)))
             if (filereadable(l:sCurFilename))
                " file readable! adding it
                call add(l:dResult[l:sCurProjName].files, l:sCurFilename)
