@@ -1,9 +1,11 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=3221
 
+IMPORTANT! You need patched version of ctags (5.8.1) to make this plugin work correctly (starting from Indexer version 2.0), because of bug in ctags 5.8. You can read detailed info about this bug and download pathed version here: http://dfrank.ru/ctags581/en.html
+
 PLEASE NOTE that in version 1.3 default name of project settings directory has been changed from ".vim" to ".vimprj" to avoid conflicts with standard ~/.vim directory. If you are using this feature and your project settings dir is ".vim", please rename it.
 --------------------------------------------------------------
 
-You can use this plugin to automatically index your project files using ctags. This can be very useful when it's used together with plugins omnicppcomplete (for c, c++ development), code_complete.vim and other plugins that using tags.  You also will be able to jump from function call to its definition just by pressing Ctrl-] or g]
+You can use this plugin to automatically index your project files using ctags. At every save of file from project tags will be updated. This can be very useful when it's used together with plugins omnicppcomplete (for c, c++ development), code_complete.vim and other plugins that using tags.  You also will be able to jump from function call to its definition just by pressing Ctrl-] or g]
 
 This plugin can work as add-on for project.tar.gz plugin ( http://www.vim.org/scripts/script.php?script_id=69 ). Indexer reads project file, parses it and builds tags for all files in project. But it also works fine without project.tar.gz.
 

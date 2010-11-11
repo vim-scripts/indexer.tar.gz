@@ -74,6 +74,19 @@ You can define the same AnotherProject simplier:
 
    /home/user/myproject2**/*.[ch]
 
+If you have many projects and you are lazy to put every project in
+this file, you can put in your ~/.indexer_files something like this:
+
+      >
+   [PROJECTS_PARENT filter="*.c *.h *.cpp"]
+
+   ~/workspace
+
+The keyword is PROJECTS_PARENT.
+In this way, every directory in ~/workspace will be interpreted as project,
+and you can open any file from any project in ~/workspace, and the 
+whole proper project will be indexed.
+
 And, finally, it can autodetect project root. So, you can move your 
 project to another place in filesystem, and all files will indexed anyway.
 More detailed see in options, variable "g:indexer_lookForProjectDir".
@@ -185,6 +198,47 @@ g:indexer_ctagsJustAppendTagsAtFileSave (default: 1)
 
    By default this option is on.
 
+g:indexer_ctagsDontSpecifyFilesIfPossible (default: 0)
+
+   This option using only when using indexer_files.
+   When it is on, ctags starts just for project root
+   directory with "-R" key.
+   The problem of this method is the all project paths 
+   will not be set in Vim.
+
+g:indexer_maxOSCommandLen (default: OS depending)
+   
+   Shell command line length limitation.
+   By default:
+   At Windows this is 8186.
+   At Linux this is getting by command:
+   $ echo $(( $(getconf ARG_MAX) - $(env | wc -c) ))
+
+   This is needed for executing ctags. If command with all files is too long,
+   then several command will be executed, with "-a" key.
+   NOTE: You need pathed ctags 5.8.1 to make it work correctly! Because of 
+   bug in ctags 5.8, you can read details about this bug and download patched 
+   version here: http://dfrank.ru/ctags581/en.html
+
+   Or use this direct links to download:
+   Linux source (gzipped): http://dfrank.ru/download?f=ctags/ctags581
+   Patch for version 5.8: http://dfrank.ru/download?f=ctags/patch_ctags_581.patch
+   Windows binary: http://dfrank.ru/download?f=ctags/ctags.zip
+
+g:indexer_useSedWhenAppend (default: 1)
+
+   This option uses only when g:indexer_ctagsJustAppendTagsAtFileSave is ON.
+   If 1, then at filesave from tags file will be removed all tags from
+   file that was been just saved, and after this new tags will be appended 
+   by ctags.
+
+   This is needed to exclude garbage (obsolete tags) in tags file.
+   
+   NOTE: If you using windows then the better way is to install cygwin, because
+   of cygwin version of SED works fine. (i have tested it) I tried use another 
+   version of sed, but there's other behavior, and so, this plugin may not 
+   work properly with it.
+
 ========================================================================
 COMMANDS                                                  *indexer-commands*
 
@@ -202,10 +256,5 @@ COMMANDS                                                  *indexer-commands*
 :IndexerRebuild
 
    rebuild tags for all files in project
-
-:IndexerFilesAvail
-
-   prints list of all available files that has been read from projects file
-
 
  vim:ft=help:tw=78:  
