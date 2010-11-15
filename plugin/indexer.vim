@@ -1,8 +1,8 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: 11 Nov 2010
-" Version:     2.0
+" Last Change: 15 Nov 2010
+" Version:     2.01
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -798,7 +798,7 @@ let s:boolUseDirsInsteadOfFiles = g:indexer_ctagsDontSpecifyFilesIfPossible
 
 if !exists('g:indexer_maxOSCommandLen')
    if (has('win32') || has('win64'))
-      let g:indexer_maxOSCommandLen = 8186
+      let g:indexer_maxOSCommandLen = 8000
    else
       let g:indexer_maxOSCommandLen = system("echo $(( $(getconf ARG_MAX) - $(env | wc -c) ))") - 200
    endif

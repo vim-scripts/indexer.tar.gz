@@ -5,7 +5,7 @@ IMPORTANT! You need patched version of ctags (5.8.1) to make this plugin work co
 PLEASE NOTE that in version 1.3 default name of project settings directory has been changed from ".vim" to ".vimprj" to avoid conflicts with standard ~/.vim directory. If you are using this feature and your project settings dir is ".vim", please rename it.
 --------------------------------------------------------------
 
-You can use this plugin to automatically index your project files using ctags. At every save of file from project tags will be updated. This can be very useful when it's used together with plugins omnicppcomplete (for c, c++ development), code_complete.vim and other plugins that using tags.  You also will be able to jump from function call to its definition just by pressing Ctrl-] or g]
+This plugin automatically indexes your project files using ctags and keeps tags up-to-date (at every save of file from project tags will be updated). This can be very useful when it's used together with plugins omnicppcomplete (for c, c++ development), code_complete.vim and other plugins that using tags.  You also will be able to jump from function call to its definition just by pressing Ctrl-] or g]
 
 This plugin can work as add-on for project.tar.gz plugin ( http://www.vim.org/scripts/script.php?script_id=69 ). Indexer reads project file, parses it and builds tags for all files in project. But it also works fine without project.tar.gz.
 
@@ -46,8 +46,10 @@ whole proper project will be indexed.
 
 And, finally, it can autodetect project root. So, you can move your project to another place in filesystem, and all files will be indexed anyway.  More detailed help see in options, variable "g:indexer_lookForProjectDir".
 
-You need ctags to be installed to make this plugin work. http://ctags.sourceforge.net/
+You need PATCHED ctags to be installed to make this plugin work. http://dfrank.ru/ctags581/en.html
+
+You also need SED for better result. If you're using Unix-like system, then SED is already in your system (99.99%), if you're using Windows, then the best way is to install Cygwin ( http://cygwin.org ). NOTE that i tested this Windows version of SED: ( http://gnuwin32.sourceforge.net/packages/sed.htm ), it is not work correctly. Cygwin's SED works fine.
 
 I have tested it both on Linux and Windows, in Vim 7.3
-If you have any troubles using this plugin, please email me.
+If you have any troubles using this plugin, feel free to email me.
 
