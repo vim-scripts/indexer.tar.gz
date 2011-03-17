@@ -1,10 +1,14 @@
 *indexer.txt* Plugin for automatically index project files using ctags
+              and keep tags up-to-date.
               For Vim 7.x version
 
 
 
                      By Dmitry Frank
-		      dimon.frank email-at-sign gmail.com
+		            dimon.frank@gmail.com
+
+Firstly: if you have any questions about this plugin, feel free
+to email me: dimon.frank@gmail.com
 
 
                                           *indexer* *indexer-plugin*
@@ -24,15 +28,15 @@ This plugin can work as add-on for project.tar.gz plugin.
 Indexer reads project file, parses it and builds tags for all files 
 in project. But it can also work without this plugin.
 
-Actually, if you using project.vim plugin and you projects file is
+Actually, if you use project.vim plugin and your projects file is
 default (~/.vimprojects), then setting indexer up is very easily: 
 you can just copy indexer.vim to your plugins directory, start Vim 
 and open any file from your project.
-The indexer plugin will detect that opened file from project 
-and automatically start ctags for each file in this project. 
-It also set &path and &tags options for Vim.
+The Indexer will detect that opened file from project 
+and automatically start ctags (in background) for each file in this 
+project. It also set &path and &tags options for Vim.
 
-If you are using project.vim but you have another projects file,
+If you use project.vim but you have another projects file,
 you should set option g:indexer_projectsSettingsFilename in your
 vimrc. See |indexer-options| for details
 
@@ -91,6 +95,37 @@ And, finally, it can autodetect project root. So, you can move your
 project to another place in filesystem, and all files will indexed anyway.
 More detailed see in options, variable "g:indexer_lookForProjectDir".
 
+
+Indexer 3.0 and later supports open several files from several 
+projects. For example, a little story.
+
+You have two projects: "project1" and "project2", and you use
+"~/.indexer_files".
+
+1) you open file1 from project1. 
+   Indexer generates tags for all files from project1 and set &tags:
+   ~/.indexer_files_tags/project1
+2) you open file2 from the same project1.
+   Indexer just notes that file2 is file from project1. 
+   &tags does not change.
+3) you open file3 from project2.
+   Indexer generates tags for all files from project2 and set &tags:
+   ~/.indexer_files_tags/project2.
+4) you switch to buffer with file1.
+   Indexer does not generate any tags, it will just change &tags to
+   ~/.indexer_files_tags/project1
+5) you switch to buffer with file3.
+   Indexer changes &tags back to ~/.indexer_files_tags/project2 .
+
+So, you should not care about your projects. It just works. If you
+have some projects with subprojects, i recommend you use .vimprj directory
+with specific settings for your project, in which you can set any 
+options such as &tags, &tabstop, etc. More detailed: read about option
+g:indexer_lookForProjectDir .
+
+Actually, Indexer sets &path for needed project when you swith to new 
+buffer, not only &tags.
+
 ========================================================================
 OPTIONS                                                  *indexer-options*
 
@@ -126,12 +161,13 @@ g:indexer_lookForProjectDir (default: 1)
       $ gvim /home/user/myproject/src/file1.c
 ----
 
-   Then indexer will detect your /home/user/myproject/.vimprj directory
+   Then Indexer will detect your /home/user/myproject/.vimprj directory
    and source all files *.vim from it,
    and set $INDEXER_PROJECT_ROOT="/home/user/myproject"
 
    so, you can define any settings that are individual for
-   your project, such as another .vimprojects file, or any other.
+   your project, such as another .vimprojects file, tabstop, shiftwidth,
+   or any other.
 
    This is great for people like me, that likes when ALL project files
    is in only one directory.
@@ -141,6 +177,15 @@ g:indexer_lookForProjectDir (default: 1)
    in my .vimprojects file, so that i can put project in any place in
    filesystem, and all files will be indexed, because 
    $INDEXER_PROJECT_ROOT will be always my real project root.
+
+   If you have several projects with .vimprj directory, then you can open
+   files from each project, and settings will be sourced every time you
+   switch to buffer from another project. So, you might want to have
+   some default settings that will be applied every time before
+   source ".vimprj/*vim" files. There's option 
+   g:indexer_defaultSettingsFilename to set name of file with default
+   settings. You can specify your vimrc in it actually, but it will
+   work slow if your vimrc not very small.
 
 g:indexer_dirNameForSearch (default: ".vimprj")
 
@@ -170,47 +215,52 @@ g:indexer_enableWhenProjectDirFound (default: 1)
    will be indexed. Otherwise project will be indexed only if there's file 
    from this project opened 
 
-g:indexer_tagsDirname (default: "~/.vimtags")
+g:indexer_tagsDirname (default: "")
 
-   directory to save tags file. (this is directory because there's propably
-   several files in next versions)
+   directory to save tags file. If empty (by default), then using following:
+   For example, you use file ~/.indexer_files, then tags will be in 
+   ~/.indexer_files_tags/<project_name>, where <project_name> is name of
+   your project =). 
+   
+   if not empty (for example, "/home/user/mytags"), then tags will be in files
+   /home/user/mytags/_home_user__indexer_files_<project_name>.
 
-   Note: If ".vimprj" directory is found, then this option is ignored and tags
-   directory becomes ".vimprj/tags"   
+   I recommend to use default.
 
 g:indexer_ctagsCommandLineOptions
 
    ctags command line options. By default is: 
    "--c++-kinds=+p+l --fields=+iaS --extra=+q"
 
-g:indexer_ctagsJustAppendTagsAtFileSave (default: 1)
+g:indexer_ctagsJustAppendTagsAtFileSave 
+   (default: 1 for non-Windows (for example, Linux) , 0 for Windows)
 
-   when there's project file saving, we need to update tags.
+   At each save of file from project, we need to update tags.
    If this option is on, then ctags will be started just for 
    current file with "-a" key, otherwise tags for all project 
    files will be rebuild.
 
-   There is different sides:
-   If just append tags, then old tags will not be removed until 
-   you rebuild all tags by typing ":IndexerRebuild" or just restart 
-   Vim. If rebuild tags every time, it would take long time 
-   (depending on project size, of course)
+   BTW, there's option g:indexer_useSedWhenAppend, and when it
+   is on, then old tags removes from tags file before append.
 
-   By default this option is on.
+   But at Windows all versions of Sed i have seen is buggy. 
+   Because of this i made default value 0 on Windows systems.
+
+   Actually, complete rebuild of all tags is not a problem, 
+   because of tags generates in background, and you do not need
+   to wait while ctags is working.
+   
 
 g:indexer_ctagsDontSpecifyFilesIfPossible (default: 0)
 
-   This option using only when using indexer_files.
-   When it is on, ctags starts just for project root
-   directory with "-R" key.
-   The problem of this method is the all project paths 
-   will not be set in Vim.
+   When this option is on, ctags starts just for project root
+   directory with "-R" key. Works a little faster in most cases.
 
 g:indexer_maxOSCommandLen (default: OS depending)
    
    Shell command line length limitation.
    By default:
-   At Windows this is 8186.
+   At Windows this is 8000.
    At Linux this is getting by command:
    $ echo $(( $(getconf ARG_MAX) - $(env | wc -c) ))
 
