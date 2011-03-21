@@ -1,8 +1,8 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: 17 Mar 2011
-" Version:     3.00
+" Last Change: 21 Mar 2011
+" Version:     3.1
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -111,18 +111,31 @@ else
 endif
 
 function! <SID>IndexerAsyncCommand(command, vim_func)
-   " String together and execute.
-   let temp_file = tempname()
 
-   " Grab output and error in case there's something we should see
-   let tool_cmd = a:command . printf(&shellredir, temp_file)
+   " async works if only v:servername is not empty!
+   " otherwise we should wait for output here.
 
-   let vim_cmd = ""
-   if !empty(a:vim_func)
-      let vim_cmd = "vim --servername ".v:servername." --remote-expr \"" . a:vim_func . "('" . temp_file . "')\" "
+   if !empty(v:servername)
+
+      " String together and execute.
+      let temp_file = tempname()
+
+      " Grab output and error in case there's something we should see
+      let tool_cmd = a:command . printf(&shellredir, temp_file)
+
+      let vim_cmd = ""
+      if !empty(a:vim_func)
+         let vim_cmd = "vim --servername ".v:servername." --remote-expr \"" . a:vim_func . "('" . temp_file . "')\" "
+      endif
+
+      call <SID>IndexerAsync_Impl(tool_cmd, vim_cmd)
+   else
+      " v:servername is empty!
+      " so, no async is present.
+      let l:resp = system(a:command)
+      let s:boolAsyncCommandInProgress = 0
    endif
 
-   call <SID>IndexerAsync_Impl(tool_cmd, vim_cmd)
 endfunction
 
 " ---------------------- my async level ----------------------
@@ -250,9 +263,9 @@ function! <SID>NeedSkipBuffer(buf)
       return 1
    endif
 
-   if empty(bufname(a:buf))
-      return 1
-   endif
+   "if empty(bufname(a:buf))
+      "return 1
+   "endif
 
    if empty(getbufvar(a:buf, "&swapfile"))
       return 1
@@ -437,6 +450,11 @@ function! <SID>IndexerInfo()
       echo '* Index-mode: FILES. (option g:indexer_ctagsDontSpecifyFilesIfPossible is OFF)'
    endif
    echo '* When saving file: '.(s:dVimprjRoots[ s:curVimprjKey ].ctagsJustAppendTagsAtFileSave ? (s:dVimprjRoots[ s:curVimprjKey ].useSedWhenAppend ? 'remove tags for saved file by SED, and ' : '').'just append tags' : 'rebuild tags for whole project')
+   if !empty(v:servername)
+      echo '* Background tags generation: YES'
+   else
+      echo '* Background tags generation: NO. (because of servername is empty. Please read :help servername)'
+   endif
    echo '* Projects indexed: '.l:sProjects
    if (!s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
       echo "* Files indexed: there's ".l:iFilesCnt.' files.' 
@@ -1040,17 +1058,13 @@ function! <SID>ParseProjectSettingsFile(sProjFileKey)
 
 endfunction
 
-
-
-
-
-
-" ************************************************************************************************
-"                    EVENT HANDLERS (OnBufSave, OnBufEnter, OnNewFileOpened)
-" ************************************************************************************************
-
-function! <SID>OnBufSave()
-   let l:sSavedFile = <SID>ParsePath(expand('<afile>:p'))
+" Update tags for all projects that owns a file.
+" (now every file can be owned just by one project)
+"
+" param a:sFile - string like '%' or '<afile>' or something like that.
+" 
+function! <SID>UpdateTagsForFile(sFile, boolJustAppendTags)
+   let l:sSavedFile = <SID>ParsePath(expand(a:sFile.':p'))
    "let l:sSavedFilePath = <SID>ParsePath(expand('%:p:h'))
 
    " для каждого проекта, в который входит файл, ...
@@ -1064,13 +1078,24 @@ function! <SID>OnBufSave()
          call add(l:dCurProject.files, l:sSavedFile)
       endif
 
-      if g:indexer_ctagsJustAppendTagsAtFileSave
+      if a:boolJustAppendTags
          call <SID>UpdateTagsForProject(l:lFileProjs.file, l:lFileProjs.name, l:sSavedFile)
       else
          call <SID>UpdateTagsForProject(l:lFileProjs.file, l:lFileProjs.name, "")
       endif
 
    endfor
+endfunction
+
+
+
+
+" ************************************************************************************************
+"                    EVENT HANDLERS (OnBufSave, OnBufEnter, OnNewFileOpened)
+" ************************************************************************************************
+
+function! <SID>OnBufSave()
+   call <SID>UpdateTagsForFile( '<afile>', s:dVimprjRoots[ s:curVimprjKey ].ctagsJustAppendTagsAtFileSave )
 endfunction
 
 function! <SID>OnBufEnter()
@@ -1080,6 +1105,10 @@ function! <SID>OnBufEnter()
 
    if (!<SID>IsBufChanged())
        return
+   endif
+
+   if empty(s:boolOnNewFileOpenedExecuted)
+      call <SID>OnNewFileOpened()
    endif
 
    "let l:sTmp = input("OnBufWinEnter_".getbufvar('%', "&buftype"))
@@ -1097,6 +1126,8 @@ function! <SID>OnNewFileOpened()
       return
    endif
 
+   let s:boolOnNewFileOpenedExecuted = 1
+
    "let l:sTmp = input("OnNewFileOpened_".getbufvar('%', "&buftype"))
 
    " actual tags dirname. If .vimprj directory will be found then this tags
@@ -1106,6 +1137,7 @@ function! <SID>OnNewFileOpened()
 
    " ищем .vimprj
    let l:sVimprjKey = "default"
+
    if s:indexer_lookForProjectDir
       " need to look for .vimprj directory
 
@@ -1242,6 +1274,7 @@ function! <SID>OnNewFileOpened()
                let l:i = 0
                let l:sCurPath = ''
                while (!l:boolFound && l:i < 10)
+                  "let l:tmp = input(simplify(expand('%:p:h').l:sCurPath)."====".join(s:dProjFilesParsed[ l:sProjFileKey ]["projects"][l:sCurProjName].paths, ', '))
                   if (<SID>IsFileExistsInList(s:dProjFilesParsed[ l:sProjFileKey ]["projects"][l:sCurProjName].paths, expand('%:p:h').l:sCurPath))
                      " user just opened file from subdir of project l:sCurProjName. 
                      " We should add it to result lists
@@ -1262,7 +1295,7 @@ function! <SID>OnNewFileOpened()
 
             if (l:iProjectsAddedCnt > 1)
                 echoerr "Warning: directory '".simplify(expand('%:p:h'))."' exists in several projects: '".join(l:lProjects, ', ')."'. Only first is indexed."
-                let l:tmp = input(" ")
+                "let l:tmp = input(" ")
             endif
 
 
@@ -1286,7 +1319,7 @@ function! <SID>OnNewFileOpened()
 
             if (l:iProjectsAddedCnt > 1)
                 echoerr "Warning: file '".simplify(expand('%:t'))."' exists in several projects: '".join(l:lProjects, ', ')."'. Only first is indexed."
-                let l:tmp = input(" ")
+                "let l:tmp = input(" ")
             endif
 
          endif
@@ -1456,7 +1489,7 @@ if exists(':IndexerFiles') != 2
    command -nargs=? -complete=file IndexerFiles call <SID>IndexerFilesList()
 endif
 if exists(':IndexerRebuild') != 2
-   command -nargs=? -complete=file IndexerRebuild call <SID>UpdateTags(0)
+   command -nargs=? -complete=file IndexerRebuild call <SID>UpdateTagsForFile('%', 0)
 endif
 
 
@@ -1466,6 +1499,7 @@ let s:dAsyncTasks = {}
 let s:iAsyncTaskNext = 0
 let s:iAsyncTaskLast = 0
 let s:boolAsyncCommandInProgress = 0
+let s:boolOnNewFileOpenedExecuted = 0
 
 " запоминаем начальные &tags, &path
 let s:sTagsDefault = &tags

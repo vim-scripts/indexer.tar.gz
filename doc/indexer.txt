@@ -126,6 +126,21 @@ g:indexer_lookForProjectDir .
 Actually, Indexer sets &path for needed project when you swith to new 
 buffer, not only &tags.
 
+Please NOTE: tags generate in _background_ if only servername
+is not empty. (if you don't know what is servername, please read
+:help servername)
+If you use Gvim, then servername is not empty by default (if all is ok), 
+and so, background tags generation should work in Gvim "out of the box".
+If you use console vim, you need to run vim somehow like that:
+
+$ vim --servername MY_NAME
+
+actually, you can make alias for this command, or something.
+
+If servername is empty, then plugin will work anyway, but you need
+to wait while ctags work. This is not really bad at rather small projects.
+
+
 ========================================================================
 OPTIONS                                                  *indexer-options*
 

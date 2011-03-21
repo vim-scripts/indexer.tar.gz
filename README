@@ -1,6 +1,6 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=3221
 
-IMPORTANT! You need patched version of ctags (5.8.1) to make this plugin work correctly (starting from Indexer version 2.0), because of bug in ctags 5.8. You can read detailed info about this bug and download pathed version here: http://dfrank.ru/ctags581/en.html
+IMPORTANT! You need patched version of ctags (5.8.1) to make this plugin work correctly (starting from Indexer version 2.0), because of bug in ctags 5.8. You can read detailed info about this bug and download patсhed version here: http://dfrank.ru/ctags581/en.html
 
 --------------------------------------------------------------
 
