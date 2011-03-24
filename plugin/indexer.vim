@@ -1,8 +1,8 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: 21 Mar 2011
-" Version:     3.1
+" Last Change: 24 Mar 2011
+" Version:     3.11
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -267,9 +267,9 @@ function! <SID>NeedSkipBuffer(buf)
       "return 1
    "endif
 
-   if empty(getbufvar(a:buf, "&swapfile"))
-      return 1
-   endif
+   "if !empty(&g:swapfile) && empty(getbufvar(a:buf, "&swapfile"))
+      "return 1
+   "endif
 
    return 0
 endfunction
@@ -340,7 +340,15 @@ endfunction
 
 
 function! <SID>IndexerFilesList()
-   echo "* Files indexed: ".join(s:dParseGlobal.files, ', ')
+   if (s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+      echo "option g:indexer_ctagsDontSpecifyFilesIfPossible is ON. So, Indexer knows nothing about files."
+   else
+      if len(s:dFiles[ s:curFileNum ]["projects"]) > 0
+         echo "* Files indexed: ".join( s:dProjFilesParsed[ s:dFiles[ s:curFileNum ]["projects"][0]["file"] ][ "projects" ][ s:dFiles[ s:curFileNum ]["projects"][0]["name"] ]["files"] )
+      else
+         echo "There's no projects indexed."
+      endif
+   endif
 endfunction
 
 " concatenates two lists preventing duplicates
