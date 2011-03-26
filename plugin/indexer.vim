@@ -2,12 +2,24 @@
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
 " Last Change: 24 Mar 2011
-" Version:     3.11
+" Version:     3.12
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
 
 "TODO:
+"
+"   *) Если есть проекты с одинаковым названием - нужно показывать варнинг
+"   *) Проверять версию ctags при старте:
+"
+"        во-первых, нужно выдавать error, если ctags вообще не установлен.
+"
+"        во-вторых, х3, нужно выдавать варнинг, если ctags не пропатчен.
+"           чтобы не надоедать юзеру, если он все равно не хочет патчить, 
+"           нужно сделать возможность убрать этот варнинг.
+"           Пока что только приходит в голову сделать специальную опцию
+"           для заглушивания этого варнинга.
+"
 "
 " ----------------
 "  In 3.0
@@ -73,10 +85,21 @@
 "              ["file"] - key for s:dProjFilesParsed
 "              ["name"] - name of project
 "           
-"        
-"  
+" s:sLastCtagsCmd    - last executed ctags command
+" s:sLastCtagsOutput - output for last executed ctags command
+"
+" s:dCtagsInfo - DICTIONARY
+"     ["executable"] - name of executable. For example, "ctags" or
+"                      "ctags.exe", etc
+"     ["versionOutput"] - output for ctags --version
+"     ["boolCtagsExists"] - if ctags is found, then 1. Otherwise 0.
+"     ["boolPatched"] - if version ctags is patched by Dmitry Frank, then 1.
+"                       Otherwise 0.
+"     ["versionFirstLine"] - output for ctags --version, but first line only.
 "
 
+"        
+"  
 
 " ************************************************************************************************
 "                                   ASYNC COMMAND FUNCTIONS
@@ -132,8 +155,11 @@ function! <SID>IndexerAsyncCommand(command, vim_func)
    else
       " v:servername is empty!
       " so, no async is present.
-      let l:resp = system(a:command)
+      let l:sCmdOutput = system(a:command)
+      call <SID>Indexer_ParseCommandOutput(l:sCmdOutput)
+
       let s:boolAsyncCommandInProgress = 0
+
    endif
 
 endfunction
@@ -156,13 +182,15 @@ function! <SID>_ExecNextAsyncTask()
    if !s:boolAsyncCommandInProgress && s:iAsyncTaskNext < s:iAsyncTaskLast
       let s:boolAsyncCommandInProgress = 1
       let l:dParams = s:dAsyncTasks[ s:iAsyncTaskNext ]
-      unlet s:dAsyncTasks[ s:iAsyncTaskNext ]
+      " s:dAsyncTasks unlets in <SID>Indexer_ParseCommandOutput()
+      let s:iAsyncTaskCur  += 1
       let s:iAsyncTaskNext += 1
 
       if l:dParams["mode"] == "AsyncModeCtags"
 
-         let l:sCmd = <SID>GetCtagsCommand(l:dParams["data"])
-         call <SID>IndexerAsyncCommand(l:sCmd, "Indexer_OnAsyncCommandComplete")
+         let s:sLastCtagsCmd = <SID>GetCtagsCommand(l:dParams["data"])
+         let s:sLastCtagsOutput = "** no output yet **"
+         call <SID>IndexerAsyncCommand(s:sLastCtagsCmd, "Indexer_OnAsyncCommandComplete")
 
       elseif l:dParams["mode"] == "AsyncModeSed"
 
@@ -175,7 +203,7 @@ function! <SID>_ExecNextAsyncTask()
          endif
 
          " we should make dummy async call
-         call <SID>IndexerAsyncCommand("ctags --version", "Indexer_OnAsyncCommandComplete")
+         call <SID>IndexerAsyncCommand(s:dCtagsInfo['executable']." --version", "Indexer_OnAsyncCommandComplete")
 
       elseif l:dParams["mode"] == "AsyncModeRename"
 
@@ -187,7 +215,7 @@ function! <SID>_ExecNextAsyncTask()
          endif
 
          " we should make dummy async call
-         call <SID>IndexerAsyncCommand("ctags --version", "Indexer_OnAsyncCommandComplete")
+         call <SID>IndexerAsyncCommand(s:dCtagsInfo['executable']." --version", "Indexer_OnAsyncCommandComplete")
 
       endif
    endif
@@ -197,6 +225,11 @@ endfunction
 function! Indexer_OnAsyncCommandComplete(temp_file_name)
 
    let s:boolAsyncCommandInProgress = 0
+
+   let l:lCmdOutput = readfile(a:temp_file_name)
+   let l:sCmdOutput = join(l:lCmdOutput, "\n")
+
+   call <SID>Indexer_ParseCommandOutput(l:sCmdOutput)
 
    "exec "split " . a:temp_file_name
    "wincmd w
@@ -210,6 +243,32 @@ endfunction
 " ************************************************************************************************
 "                                   ADDITIONAL FUNCTIONS
 " ************************************************************************************************
+
+function! <SID>Indexer_ParseCommandOutput(sOutput)
+   let l:dParams = s:dAsyncTasks[ s:iAsyncTaskCur ]
+   unlet s:dAsyncTasks[ s:iAsyncTaskCur ]
+
+
+   if l:dParams['mode'] == 'AsyncModeCtags'
+      " we need to save last ctags output, for debug
+      let s:sLastCtagsOutput = a:sOutput
+
+      " ctags output should be empty.
+      " if it is not, then we should show warning
+      if len(matchlist(s:sLastCtagsOutput, "[a-zA-Z0-9_а-яА-Я.,-=!\\/]")) > 0
+         if empty(s:indexer_disableCtagsWarning)
+            let l:iMaxCmdLenToShow = 200
+            if strlen(s:sLastCtagsCmd) > l:iMaxCmdLenToShow
+               let l:sCtagsCmd = strpart(s:sLastCtagsCmd, 0, l:iMaxCmdLenToShow)."....(cutted, to see full command, type :IndexerDebugInfo)"
+            else
+               let l:sCtagsCmd = s:sLastCtagsCmd
+            endif
+            call confirm ("Indexer warning: ctags output was not empty: \n\"".s:sLastCtagsOutput."\"\n\nCtags command was:\n\"".l:sCtagsCmd."\"\n\nIf you want to disable this warning, please set option g:indexer_disableCtagsWarning=1")
+         endif
+      endif
+   endif
+
+endfunction
 
 function! <SID>DeleteFile(filename)
    call <SID>AddNewAsyncTask({'mode' : 'AsyncModeDelete' , 'data' : { 'filename' : a:filename } })
@@ -412,6 +471,15 @@ endfunction
 
 
 
+function! <SID>IndexerDebugInfo()
+   echo '* Ctags executable: '.s:dCtagsInfo['executable']
+   echo '* Ctags versionOutput: '.s:dCtagsInfo['versionOutput']
+   echo '* Ctags boolCtagsExists: '.s:dCtagsInfo['boolCtagsExists']
+   echo '* Ctags boolPatched: '.s:dCtagsInfo['boolPatched']
+   echo '* Ctags versionFirstLine: '.s:dCtagsInfo['versionFirstLine']
+   echo '* Ctags last command: "'.s:sLastCtagsCmd.'"'
+   echo '* Ctags last output: "'.s:sLastCtagsOutput.'"'
+endfunction
 
 function! <SID>IndexerInfo()
 
@@ -443,40 +511,50 @@ function! <SID>IndexerInfo()
 
    endfor
 
-   if (s:dVimprjRoots[ s:curVimprjKey ].mode == '')
-      echo '* Filelist: not found'
-   elseif (s:dVimprjRoots[ s:curVimprjKey ].mode == 'IndexerFile')
-      echo '* Filelist: indexer file: '.s:dVimprjRoots[ s:curVimprjKey ].indexerListFilename
-   elseif (s:dVimprjRoots[ s:curVimprjKey ].mode == 'ProjectFile')
-      echo '* Filelist: project file: '.s:dVimprjRoots[ s:curVimprjKey ].projectsSettingsFilename
-   else
-      echo '* Filelist: Unknown'
-   endif
-   if (s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
-      echo '* Index-mode: DIRS. (option g:indexer_ctagsDontSpecifyFilesIfPossible is ON)'
-   else
-      echo '* Index-mode: FILES. (option g:indexer_ctagsDontSpecifyFilesIfPossible is OFF)'
-   endif
-   echo '* When saving file: '.(s:dVimprjRoots[ s:curVimprjKey ].ctagsJustAppendTagsAtFileSave ? (s:dVimprjRoots[ s:curVimprjKey ].useSedWhenAppend ? 'remove tags for saved file by SED, and ' : '').'just append tags' : 'rebuild tags for whole project')
-   if !empty(v:servername)
-      echo '* Background tags generation: YES'
-   else
-      echo '* Background tags generation: NO. (because of servername is empty. Please read :help servername)'
-   endif
-   echo '* Projects indexed: '.l:sProjects
-   if (!s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
-      echo "* Files indexed: there's ".l:iFilesCnt.' files.' 
-      " Type :IndexerFiles to list'
-      echo "* Files not found: there's ".l:iFilesNotFoundCnt.' non-existing files. ' 
-      ".join(s:dParseGlobal.not_exist, ', ')
-   endif
+   call <SID>Indexer_DetectCtags()
 
-   echo "* Root paths: ".l:sPathsRoot
-   echo "* Paths for ctags: ".l:sPathsForCtags
+   echo '* Indexer version: '.s:sIndexerVersion
 
-   echo '* Paths (with all subfolders): '.&path
-   echo '* Tags file: '.&tags
-   echo '* Project root: '.($INDEXER_PROJECT_ROOT != '' ? $INDEXER_PROJECT_ROOT : 'not found').'  (Project root is a directory which contains "'.s:indexer_dirNameForSearch.'" directory)'
+   if empty(s:dCtagsInfo['boolCtagsExists'])
+      echo '* Error: Ctags NOT FOUND. You need to install Exuberant Ctags to make Indexer work. The better way is to install patched ctags: http://dfrank.ru/ctags581/en.html'
+   else
+      echo '* Ctags version: '.s:dCtagsInfo['versionFirstLine']
+      
+      if (s:dVimprjRoots[ s:curVimprjKey ].mode == '')
+         echo '* Filelist: not found'
+      elseif (s:dVimprjRoots[ s:curVimprjKey ].mode == 'IndexerFile')
+         echo '* Filelist: indexer file: '.s:dVimprjRoots[ s:curVimprjKey ].indexerListFilename
+      elseif (s:dVimprjRoots[ s:curVimprjKey ].mode == 'ProjectFile')
+         echo '* Filelist: project file: '.s:dVimprjRoots[ s:curVimprjKey ].projectsSettingsFilename
+      else
+         echo '* Filelist: Unknown'
+      endif
+      if (s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+         echo '* Index-mode: DIRS. (option g:indexer_ctagsDontSpecifyFilesIfPossible is ON)'
+      else
+         echo '* Index-mode: FILES. (option g:indexer_ctagsDontSpecifyFilesIfPossible is OFF)'
+      endif
+      echo '* When saving file: '.(s:dVimprjRoots[ s:curVimprjKey ].ctagsJustAppendTagsAtFileSave ? (s:dVimprjRoots[ s:curVimprjKey ].useSedWhenAppend ? 'remove tags for saved file by SED, and ' : '').'just append tags' : 'rebuild tags for whole project')
+      if !empty(v:servername)
+         echo '* Background tags generation: YES'
+      else
+         echo '* Background tags generation: NO. (because of servername is empty. Please read :help servername)'
+      endif
+      echo '* Projects indexed: '.l:sProjects
+      if (!s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+         echo "* Files indexed: there's ".l:iFilesCnt.' files. Type :IndexerFiles for list.'
+         " Type :IndexerFiles to list'
+         echo "* Files not found: there's ".l:iFilesNotFoundCnt.' non-existing files. ' 
+         ".join(s:dParseGlobal.not_exist, ', ')
+      endif
+
+      echo "* Root paths: ".l:sPathsRoot
+      echo "* Paths for ctags: ".l:sPathsForCtags
+
+      echo '* Paths (with all subfolders): '.&path
+      echo '* Tags file: '.&tags
+      echo '* Project root: '.($INDEXER_PROJECT_ROOT != '' ? $INDEXER_PROJECT_ROOT : 'not found').'  (Project root is a directory which contains "'.s:indexer_dirNameForSearch.'" directory)'
+   endif
 endfunction
 
 
@@ -520,7 +598,7 @@ function! <SID>GetCtagsCommand(dParams)
    endif
 
    let l:sTagsFile = '"'.a:dParams.sTagsFile.'"'
-   let l:sCmd = 'ctags -f '.l:sTagsFile.' '.l:sRecurseCode.' '.l:sAppendCode.' '.l:sSortCode.' '.s:dVimprjRoots[ s:curVimprjKey ].ctagsCommandLineOptions.' '.a:dParams.sFiles
+   let l:sCmd = s:dCtagsInfo['executable'].' -f '.l:sTagsFile.' '.l:sRecurseCode.' '.l:sAppendCode.' '.l:sSortCode.' '.s:dVimprjRoots[ s:curVimprjKey ].ctagsCommandLineOptions.' '.a:dParams.sFiles
 
    "if (has('win32') || has('win64'))
       "let l:sCmd = 'ctags -f '.l:sTagsFile.' '.l:sRecurseCode.' '.l:sAppendCode.' '.l:sSortCode.' '.s:dVimprjRoots[ s:curVimprjKey ].ctagsCommandLineOptions.' '.a:dParams.sFiles
@@ -619,6 +697,63 @@ endfunction
 "                                   CTAGS SPECIAL FUNCTIONS
 " ************************************************************************************************
 
+function! <SID>IndexerGetCtagsName()
+   " Location of the exuberant ctags tool_cmd
+   " (token from taglist plugin)
+
+   let l:sCtagsName = ''
+   if executable('ctags')
+      let l:sCtagsName = 'ctags'
+   elseif executable('exuberant-ctags')
+      " On Debian Linux, exuberant ctags is installed
+      " as exuberant-ctags
+      let l:sCtagsName = 'exuberant-ctags'
+   elseif executable('exctags')
+      " On Free-BSD, exuberant ctags is installed as exctags
+      let l:sCtagsName = 'exctags'
+   elseif executable('ctags.exe')
+      let l:sCtagsName = 'ctags.exe'
+   elseif executable('tags')
+      let l:sCtagsName = 'tags'
+   endif
+
+   return l:sCtagsName
+
+endfunction
+
+function! <SID>IndexerGetCtagsVersion()
+
+   let l:dCtagsInfo = {'executable' : '', 'versionOutput' : '', 'boolCtagsExists' : 0, 'boolPatched' : 0, 'versionFirstLine' : ''}
+
+   let l:dCtagsInfo['executable'] = <SID>IndexerGetCtagsName()
+
+   if !empty(l:dCtagsInfo['executable'])
+      let l:dCtagsInfo['boolCtagsExists'] = 1
+
+      let l:dCtagsInfo['versionOutput'] = system(l:dCtagsInfo['executable']." --version")
+
+      if len(matchlist(l:dCtagsInfo['versionOutput'], "\\vExuberant")) > 0
+
+         let l:dCtagsInfo['versionFirstLine'] = substitute(l:dCtagsInfo['versionOutput'], "\\v^([^\r\n]*).*$", "\\1", "g")
+
+         if len(matchlist(l:dCtagsInfo['versionOutput'], "\\vdimon\\.frank\\@gmail\\.com")) > 0
+            let l:dCtagsInfo['boolPatched'] = 1
+         endif
+
+      endif
+   else
+      " if executable is empty, let's set it to "ctags", anyway.
+      let l:dCtagsInfo['executable'] = 'ctags'
+   endif
+
+   return l:dCtagsInfo
+
+endfunction
+
+function! <SID>Indexer_DetectCtags()
+   let s:dCtagsInfo = <SID>IndexerGetCtagsVersion()
+endfunction
+
 " update tags for one project.
 " 
 " params:
@@ -629,40 +764,47 @@ endfunction
 "                  otherwise, updating tags for just this file with Append.
 function! <SID>UpdateTagsForProject(sProjFileKey, sProjName, sSavedFile)
 
-   let l:sTagsFile = s:dProjFilesParsed[ a:sProjFileKey ]["projects"][ a:sProjName ].tagsFilename
-   let l:dCurProject = s:dProjFilesParsed[a:sProjFileKey]["projects"][ a:sProjName ]
 
-   if (!empty(a:sSavedFile) && filereadable(l:sTagsFile))
-      " just appending tags from just saved file. (from one file!)
-      if (s:dVimprjRoots[ s:curVimprjKey ].useSedWhenAppend)
-         call <SID>ExecSed({'sTagsFile': l:sTagsFile, 'sFilenameToDeleteTagsWith': a:sSavedFile})
-      endif
-      call <SID>ExecCtags({'append': 1, 'recursive': 0, 'sTagsFile': l:sTagsFile, 'sFiles': a:sSavedFile})
-
-   else
-      " need to rebuild all tags.
-
-      " deleting old tagsfile
-      "if (filereadable(l:sTagsFile))
-         "call delete(l:sTagsFile)
-      "endif
-      "let l:dAsyncParams = {'mode' : 'AsyncModeDelete' , 'data' : { 'filename' : l:sTagsFile } }
-
-      call <SID>DeleteFile(l:sTagsFile."_tmp")
-
-      " generating tags for files
-      call <SID>ExecCtagsForListOfFiles({'lFilelist': l:dCurProject.files,          'sTagsFile': l:sTagsFile."_tmp",  'recursive': 0})
-      " generating tags for directories
-      call <SID>ExecCtagsForListOfFiles({'lFilelist': l:dCurProject.pathsForCtags,  'sTagsFile': l:sTagsFile."_tmp",  'recursive': 1})
-
-      call <SID>RenameFile(l:sTagsFile."_tmp", l:sTagsFile)
-
+   if empty(s:dCtagsInfo['boolCtagsExists'])
+      call <SID>Indexer_DetectCtags()
    endif
+   
+   if !empty(s:dCtagsInfo['boolCtagsExists'])
+      let l:sTagsFile = s:dProjFilesParsed[ a:sProjFileKey ]["projects"][ a:sProjName ].tagsFilename
+      let l:dCurProject = s:dProjFilesParsed[a:sProjFileKey]["projects"][ a:sProjName ]
+
+      if (!empty(a:sSavedFile) && filereadable(l:sTagsFile))
+         " just appending tags from just saved file. (from one file!)
+         if (s:dVimprjRoots[ s:curVimprjKey ].useSedWhenAppend)
+            call <SID>ExecSed({'sTagsFile': l:sTagsFile, 'sFilenameToDeleteTagsWith': a:sSavedFile})
+         endif
+         call <SID>ExecCtags({'append': 1, 'recursive': 0, 'sTagsFile': l:sTagsFile, 'sFiles': a:sSavedFile})
+
+      else
+         " need to rebuild all tags.
+
+         " deleting old tagsfile
+         "if (filereadable(l:sTagsFile))
+            "call delete(l:sTagsFile)
+         "endif
+         "let l:dAsyncParams = {'mode' : 'AsyncModeDelete' , 'data' : { 'filename' : l:sTagsFile } }
+
+         call <SID>DeleteFile(l:sTagsFile."_tmp")
+
+         " generating tags for files
+         call <SID>ExecCtagsForListOfFiles({'lFilelist': l:dCurProject.files,          'sTagsFile': l:sTagsFile."_tmp",  'recursive': 0})
+         " generating tags for directories
+         call <SID>ExecCtagsForListOfFiles({'lFilelist': l:dCurProject.pathsForCtags,  'sTagsFile': l:sTagsFile."_tmp",  'recursive': 1})
+
+         call <SID>RenameFile(l:sTagsFile."_tmp", l:sTagsFile)
+
+      endif
 
 
 
 
-   let s:dProjFilesParsed[ a:sProjFileKey ]["projects"][ a:sProjName ].boolIndexed = 1
+      let s:dProjFilesParsed[ a:sProjFileKey ]["projects"][ a:sProjName ].boolIndexed = 1
+   endif
 
 endfunction
 
@@ -1436,6 +1578,13 @@ else
    let s:indexer_maxOSCommandLen = g:indexer_maxOSCommandLen
 endif
 
+if !exists('g:indexer_disableCtagsWarning')
+   let s:indexer_disableCtagsWarning = 0
+else
+   let s:indexer_disableCtagsWarning = g:indexer_disableCtagsWarning
+endif
+
+
 
 
 
@@ -1493,6 +1642,9 @@ let s:def_ctagsDontSpecifyFilesIfPossible = g:indexer_ctagsDontSpecifyFilesIfPos
 if exists(':IndexerInfo') != 2
    command -nargs=? -complete=file IndexerInfo call <SID>IndexerInfo()
 endif
+if exists(':IndexerDebugInfo') != 2
+   command -nargs=? -complete=file IndexerDebugInfo call <SID>IndexerDebugInfo()
+endif
 if exists(':IndexerFiles') != 2
    command -nargs=? -complete=file IndexerFiles call <SID>IndexerFilesList()
 endif
@@ -1500,10 +1652,20 @@ if exists(':IndexerRebuild') != 2
    command -nargs=? -complete=file IndexerRebuild call <SID>UpdateTagsForFile('%', 0)
 endif
 
+call <SID>Indexer_DetectCtags()
+let s:sIndexerVersion = '3.12'
+
+if empty(s:dCtagsInfo['boolCtagsExists'])
+   echomsg "Indexer error: Exuberant Ctags not found in PATH. You need to install Ctags to make Indexer work."
+endif
+
+let s:sLastCtagsCmd =      "** no ctags commands yet **"
+let s:sLastCtagsOutput =   "** no output yet **"
 
 " DICTIONARY for acync commands
 "let s:dAsyncData = {}
 let s:dAsyncTasks = {}
+let s:iAsyncTaskCur = -1
 let s:iAsyncTaskNext = 0
 let s:iAsyncTaskLast = 0
 let s:boolAsyncCommandInProgress = 0
