@@ -16,6 +16,10 @@ to email me: dimon.frank@gmail.com
 
          Options.....................|indexer-options|
          Commands...................|indexer-commands|
+         Background...............|indexer-background|
+         Debug commands.......|indexer-debug-commands|
+         Troubleshooting.....|indexer-troubleshooting|
+         Thanks.......................|indexer-thanks|
 
 You can use this plugin to automatically index your project files 
 using ctags. This can be very useful when it's used together with plugins
@@ -63,6 +67,10 @@ Example file "~/.indexer_files" >
    /home/user/myproject2**/*.c
    /home/user/myproject2**/*.h
 
+
+NOTE: 
+   /path/to/dir/*.c     means "files *.c from /path/to/dir"  (e.g. non-recursive)
+   /path/to/dir**/*.c   means "files *.c from /path/to/dir and all subdirectories" (e.g. recursive)
 
 I think, there's all obvious:
 there's two projects: CoolProject and AnotherProject.
@@ -126,10 +134,13 @@ g:indexer_lookForProjectDir .
 Actually, Indexer sets &path for needed project when you swith to new 
 buffer, not only &tags.
 
-Please NOTE: tags generate in _background_ if only servername
+                                                         *indexer-background*
+Please NOTE: tags generate in background if only servername
 is not empty. (if you don't know what is servername, please read
-:help servername)
-If you use Gvim, then servername is not empty by default (if all is ok), 
+:help servername). Otherwise tags generate in Vim thread, and you need
+to wait while ctags work.
+
+If you use Gvim, then servername is "GVIM" by default (if all is ok), 
 and so, background tags generation should work in Gvim "out of the box".
 If you use console vim, you need to run vim somehow like that:
 
@@ -147,6 +158,7 @@ OPTIONS                                                  *indexer-options*
 You can set these variables in your vimrc file before the plugin is loaded to
 change its default behavior
 
+                                               *indexer_lookForProjectDir*
 g:indexer_lookForProjectDir (default: 1)
 
    if on, then plugin will recursively-up search for ".vimprj" directory.
@@ -202,34 +214,41 @@ g:indexer_lookForProjectDir (default: 1)
    settings. You can specify your vimrc in it actually, but it will
    work slow if your vimrc not very small.
 
+                                               *indexer_dirNameForSearch*
 g:indexer_dirNameForSearch (default: ".vimprj")
 
    directory name with project settings for search (".vimprj" by default)
 
+                                               *indexer_recurseUpCount*
 g:indexer_recurseUpCount (default: 10)
 
    count of recurse-up for search ".vimprj" directory
 
+                                               *indexer_indexerListFilename*
 g:indexer_indexerListFilename (default: "~/.indexer_files")
 
    indexer filename. If this file exists then projects file are ignored.
 
+                                           *indexer_projectsSettingsFilename*
 g:indexer_projectsSettingsFilename (default: "~/.vimprojects")
 
    project filename. (the project file that plugin project.vim using)
 
+                                                        *indexer_projectName*
 g:indexer_projectName (default: '')
 
    if you don't wand to index any project, you can define one name.
    If it is empty, then indexes any found projects.
    By default is empty.
 
+                                          *indexer_enableWhenProjectDirFound*
 g:indexer_enableWhenProjectDirFound (default: 1)
 
    If this option is set, then if gvim started from project directory, this project
    will be indexed. Otherwise project will be indexed only if there's file 
    from this project opened 
 
+                                                       *indexer_tagsDirname*
 g:indexer_tagsDirname (default: "")
 
    directory to save tags file. If empty (by default), then using following:
@@ -242,11 +261,13 @@ g:indexer_tagsDirname (default: "")
 
    I recommend to use default.
 
+                                            *indexer_ctagsCommandLineOptions*
 g:indexer_ctagsCommandLineOptions
 
    ctags command line options. By default is: 
    "--c++-kinds=+p+l --fields=+iaS --extra=+q"
 
+                                      *indexer_ctagsJustAppendTagsAtFileSave*
 g:indexer_ctagsJustAppendTagsAtFileSave 
    (default: 1 for non-Windows (for example, Linux) , 0 for Windows)
 
@@ -266,11 +287,14 @@ g:indexer_ctagsJustAppendTagsAtFileSave
    to wait while ctags is working.
    
 
+                                      *indexer_ctagsDontSpecifyFilesIfPossible*
 g:indexer_ctagsDontSpecifyFilesIfPossible (default: 0)
 
    When this option is on, ctags starts just for project root
-   directory with "-R" key. Works a little faster in most cases.
+   directories with "-R" key. Works a little faster in most cases,
+   but you can't specify what especially files should be indexed.
 
+                                                    *indexer_maxOSCommandLen*
 g:indexer_maxOSCommandLen (default: OS depending)
    
    Shell command line length limitation.
@@ -281,28 +305,59 @@ g:indexer_maxOSCommandLen (default: OS depending)
 
    This is needed for executing ctags. If command with all files is too long,
    then several command will be executed, with "-a" key.
-   NOTE: You need pathed ctags 5.8.1 to make it work correctly! Because of 
-   bug in ctags 5.8, you can read details about this bug and download patched 
-   version here: http://dfrank.ru/ctags581/en.html
+   NOTE: You need patched ctags 5.8.1 to make it work correctly with C/C++ files!
+   Because of bug in ctags 5.8, you can read details about this bug and download 
+   patched version here: http://dfrank.ru/ctags581/en.html
 
    Or use this direct links to download:
    Linux source (gzipped): http://dfrank.ru/download?f=ctags/ctags581
    Patch for version 5.8: http://dfrank.ru/download?f=ctags/patch_ctags_581.patch
    Windows binary: http://dfrank.ru/download?f=ctags/ctags.zip
 
+                                                   *indexer_useSedWhenAppend*
 g:indexer_useSedWhenAppend (default: 1)
 
    This option uses only when g:indexer_ctagsJustAppendTagsAtFileSave is ON.
    If 1, then at filesave from tags file will be removed all tags from
-   file that was been just saved, and after this new tags will be appended 
-   by ctags.
+   saved file, and then new tags will be appended by ctags.
 
    This is needed to exclude garbage (obsolete tags) in tags file.
    
-   NOTE: If you using windows then the better way is to install cygwin, because
-   of cygwin version of SED works fine. (i have tested it) I tried use another 
-   version of sed, but there's other behavior, and so, this plugin may not 
-   work properly with it.
+   NOTE: If you using Windows, then the better way is not to use sed,
+   because of all Windows versions of Sed i have seen is buggy. 
+   Read |indexer_ctagsJustAppendTagsAtFileSave| for details.
+   
+
+                                                 *indexer_backgroundDisabled*
+g:indexer_backgroundDisabled (default: 0)
+   
+  If 0 (by default), then tags generate in background (if possible. see |indexer-background|)
+  If non-zero, then tags always generate in Vim thread. 
+
+  This option is added as a possible trouble-shoot. For instance, on Windows 7
+  there was some problems with background tags generation. These troubles
+  is solved in Indexer 3.14, but i don't know where i face same 
+  troubles again =)
+
+                                                      *indexer_debugLogLevel*
+g:indexer_debugLogLevel (default: 0)
+
+  debug log level.
+
+  Levels available:
+
+  0: log is disabled
+  1: operations with tags is logged
+  2: operations with tags and projects is logged
+  3: all possible debug info is logged
+
+  You can see log by typing :IndexerDebugLog
+  You can save complete debug snapshot by typing :IndexerDebugSave
+
+                                                  *indexer_debugLogFilename*
+g:indexer_debugLogFilename (default: "")
+
+  if not empty and if debug level > 0, then all log writes into this file.
 
 ========================================================================
 COMMANDS                                                  *indexer-commands*
@@ -313,7 +368,7 @@ COMMANDS                                                  *indexer-commands*
    using, files not found, and other.
 
    The first thing you should do if plugin doesn't work is type this command :)
-   
+
 :IndexerFiles
 
    prints list of indexed files
@@ -321,5 +376,57 @@ COMMANDS                                                  *indexer-commands*
 :IndexerRebuild
 
    rebuild tags for all files in project
+
+                                                          *indexer-debug-commands*
+:IndexerDebugLog
+
+   prints debug log.
+   Note: you need to specify log level by modifying variable g:indexer_debugLogLevel
+   Max log level is 3 (all info)
+   Min log level is 0 (log disabled. default)
+   
+:IndexerDebugSave
+
+   prompts for filename and saves debug snapshot to file.
+   
+:IndexerDebugInfo
+
+   prints some debug information. (Not very detailed at this moment)
+
+
+========================================================================
+TROUBLESHOOTING                                *indexer-troubleshooting*
+
+There's no normal troubleshooting manual written yet ;)
+
+Well, if you have troubles, please do the following:
+
+*) put in your vimrc following line:
+      let g:indexer_debugLogLevel = 2
+*) close Vim, open it again and open any file from project.
+*) type:
+      :IndexerDebugSave
+   and enter filename to save snapshot (for instance, ~/vim_dbg.txt)
+*) send to me resulting snapshot file, provide detailed info 
+   about troubles, and tell:
+   -) what Vim version do you use
+   -) what OS do you use
+
+*) don't forget to set g:indexer_debugLogLevel = 0 again, to avoid
+   useless memory allocation.
+
+
+========================================================================
+THANKS                                                  *indexer-thanks*
+
+There's some people i'd like to say thanks for help with make Indexer better:
+
+* Makoto Nokata
+* Alexander Q
+* Torkve
+* Dan Price
+* Thiago Bellini
+* Shi Haipend 
+* Alexander Pazdnikov
 
  vim:ft=help:tw=78:  

@@ -1,15 +1,19 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=3221
 
-IMPORTANT! You need patched version of ctags (5.8.1) to make this plugin work correctly with C/C++ files, because of bug in ctags 5.8. You can read detailed info about this bug and download patсhed version here: http://dfrank.ru/ctags581/en.html
-
---------------------------------------------------------------
-
 If you are russian, you might want to read article in russian about this plugin: http://habrahabr.ru/blogs/vim/102954/
+-----------------------------------
 
-This plugin automatically indexes your project files using ctags and keeps tags up-to-date (at every save of file from project tags will be updated). This can be very useful when it's used together with plugins omnicppcomplete (for c, c++ development), code_complete.vim and other plugins that using tags.  You also will be able to jump from function call to its definition just by pressing Ctrl-] or g]
+This plugin can work in two ways:
+1) independently
+2) as add-on for project.tar.gz (vimscript #69)
 
-This plugin can work as add-on for project.tar.gz plugin ( http://www.vim.org/scripts/script.php?script_id=69 ). Indexer reads project file, parses it and builds tags for all files in project. But it also works fine without project.tar.gz.
+In both ways, it provides painless automatic tags generation and keeps tags up-to-date.
 
+IMPORTANT: you need patched version of ctags (5.8.1) to make this plugin work correctly with C/C++ files, because of bug in ctags 5.8. You can read detailed info about this bug and download patсhed version here: http://dfrank.ru/ctags581/en.html
+
+This plugin can be very useful when it's used together with plugins omnicppcomplete (for c, c++ development), code_complete.vim and other plugins that use tags.  You also will be able to jump from function call to its definition just by pressing Ctrl-] or g]
+
+As i said, Indexer can work as add-on for project.tar.gz plugin ( vimscript #69 ). Indexer reads project file, parses it and builds tags for all files in project. But it also works fine without project.tar.gz.
 
 Actually, if you are using project.tar.gz plugin and your projects file is default (~/.vimprojects), then setting Indexer up is very easily: you can just copy indexer.vim to your plugins directory, start Vim and open any file from your project.  The indexer plugin will detect that opened file is a file from project and automatically start ctags for each file in this project.  It also set &path and &tags options for Vim.
 
