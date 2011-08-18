@@ -7,7 +7,7 @@ This plugin can work in two ways:
 1) independently
 2) as add-on for project.tar.gz (vimscript #69)
 
-In both ways, it provides painless automatic tags generation and keeps tags up-to-date.
+In both ways, it provides painless automatic tags generation for whole project(s) and keeps tags up-to-date.
 
 IMPORTANT: you need patched version of ctags (5.8.1) to make this plugin work correctly with C/C++ files, because of bug in ctags 5.8. You can read detailed info about this bug and download patсhed version here: http://dfrank.ru/ctags581/en.html
 
@@ -15,13 +15,13 @@ This plugin can be very useful when it's used together with plugins omnicppcompl
 
 As i said, Indexer can work as add-on for project.tar.gz plugin ( vimscript #69 ). Indexer reads project file, parses it and builds tags for all files in project. But it also works fine without project.tar.gz.
 
-Actually, if you are using project.tar.gz plugin and your projects file is default (~/.vimprojects), then setting Indexer up is very easily: you can just copy indexer.vim to your plugins directory, start Vim and open any file from your project.  The indexer plugin will detect that opened file is a file from project and automatically start ctags for each file in this project.  It also set &path and &tags options for Vim.
+Actually, if you use project.tar.gz plugin and your projects file is default (~/.vimprojects), then setting Indexer up is very easily: you can just copy indexer.vim to your plugins directory, start Vim and open any file from your project.  The indexer plugin will detect that opened file is a file from project and automatically start ctags for each file in this project.  It also set &path and &tags options for Vim.
 
-If you are using project.tar.gz, but you have another projects file, you should set option g:indexer_projectsSettingsFilename in your vimrc.
+If you use project.tar.gz, but you have another projects file, you should set option g:indexer_projectsSettingsFilename in your vimrc.
 
 If you don't use project.tar.gz then you can use ".indexer_files" to define projects and files to index.  Default location of this file is "~/.indexer_files". You can change it by modifying variable g:indexer_indexerListFilename
 
-Syntax of this file is simple, propably the best way to explain it is to show an example:
+Syntax of this file is simple, probably the best way to explain it is to show an example:
 --------------------- example ~/.indexer_files -----------------------
 [CoolProject] 
  
@@ -86,3 +86,5 @@ If you have any troubles using this plugin, feel free to email me.
 Mercurial repos:
 Stable branch: http://tinyurl.com/vim-indexer-stable
 Development branch: http://tinyurl.com/vim-indexer-development
+
+
