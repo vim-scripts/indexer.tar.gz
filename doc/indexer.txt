@@ -288,11 +288,16 @@ g:indexer_ctagsJustAppendTagsAtFileSave
    
 
                                       *indexer_ctagsDontSpecifyFilesIfPossible*
-g:indexer_ctagsDontSpecifyFilesIfPossible (default: 0)
+g:indexer_ctagsDontSpecifyFilesIfPossible (possible values: -1, 0, 1; default: -1)
 
-   When this option is on, ctags starts just for project root
-   directories with "-R" key. Works a little faster in most cases,
+   When this option is 1, ctags starts just for project root
+   directories with "-R" key. Works faster in most cases,
    but you can't specify what especially files should be indexed.
+
+   When this option is 0, ctags starts for every file.
+
+   When this option is -1, then with .indexer_files it behaves like 1,
+   but with .vimprojects it behaves like 0.
 
                                                     *indexer_maxOSCommandLen*
 g:indexer_maxOSCommandLen (default: OS depending)

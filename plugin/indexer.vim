@@ -1,8 +1,7 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Last Change: 24 Mar 2011
-" Version:     3.16
+" Version:     3.17
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -10,7 +9,7 @@
 
 "TODO:
 "
-"   *) Если есть проекты с одинаковым названием - нужно показывать варнинг
+"   *) Если есть проекты с одинаковым назpruningapproachванием - нужно показывать варнинг
 "   *) Проверять версию ctags при старте:
 "
 "        во-первых, нужно выдавать error, если ctags вообще не установлен.
@@ -338,6 +337,22 @@ endfunction
 "                                      ADDITIONAL FUNCTIONS
 " ************************************************************************************************
 
+function! <SID>_UseDirsInsteadOfFiles(dVimprjRoot)
+   if (a:dVimprjRoot.mode == 'IndexerFile')
+      if (a:dVimprjRoot.useDirsInsteadOfFiles == 0)
+         return 0
+      else
+         return 1
+      endif
+   else
+      if (a:dVimprjRoot.useDirsInsteadOfFiles == 1)
+         return 1
+      else
+         return 0
+      endif
+   endif
+endfunction
+
 function! <SID>_IsBackgroundEnabled()
    return (!empty(v:servername) && empty(s:dVimprjRoots[ s:curVimprjKey ].backgroundDisabled))
 endfunction
@@ -564,7 +579,7 @@ endfunction
 
 
 function! <SID>IndexerFilesList()
-   if (s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+   if (<SID>_UseDirsInsteadOfFiles(s:dVimprjRoots[ s:curVimprjKey ]))
       echo "option g:indexer_ctagsDontSpecifyFilesIfPossible is ON. So, Indexer knows nothing about files."
    else
       if len(s:dFiles[ s:curFileNum ]["projects"]) > 0
@@ -683,7 +698,7 @@ function! <SID>IndexerInfo()
       else
          echo '* Filelist: Unknown'
       endif
-      if (s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+      if (<SID>_UseDirsInsteadOfFiles(s:dVimprjRoots[ s:curVimprjKey ]))
          echo '* Index-mode: DIRS. (option g:indexer_ctagsDontSpecifyFilesIfPossible is ON)'
       else
          echo '* Index-mode: FILES. (option g:indexer_ctagsDontSpecifyFilesIfPossible is OFF)'
@@ -702,7 +717,7 @@ function! <SID>IndexerInfo()
          echo '* Background tags generation: NO. '.<SID>_GetBackgroundComment()
       endif
       echo '* Projects indexed: '.l:sProjects
-      if (!s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+      if (!<SID>_UseDirsInsteadOfFiles(s:dVimprjRoots[ s:curVimprjKey ]))
          echo "* Files indexed: there's ".l:iFilesCnt.' files. Type :IndexerFiles for list.'
          " Type :IndexerFiles to list'
          echo "* Files not found: there's ".l:iFilesNotFoundCnt.' non-existing files. ' 
@@ -1160,7 +1175,7 @@ function! <SID>GetDirsAndFilesFromIndexerList(aLines, projectName, dExistsResult
                let l:dResult[l:sCurProjName].paths = <SID>ConcatLists(l:dResult[l:sCurProjName].paths, l:lDirs)
 
 
-               if (!s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+               if (!<SID>_UseDirsInsteadOfFiles(s:dVimprjRoots[ s:curVimprjKey ]))
                   " adding every file.
                   let l:dResult[l:sCurProjName].files = <SID>ConcatLists(l:dResult[l:sCurProjName].files, split(expand(substitute(<SID>Trim(l:sLine), '\\\*\*', '**', 'g')), '\n'))
                else
@@ -1274,7 +1289,7 @@ function! <SID>GetDirsAndFilesFromProjectFile(projectFile, projectName)
       endwhile
 
       " searching for filename (if there's files-mode, not dir-mode)
-      if (!s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+      if (!<SID>_UseDirsInsteadOfFiles(s:dVimprjRoots[ s:curVimprjKey ]))
          if (l:sLine =~ '^[^={}]*$' && l:sLine !~ '^\s*$')
             " here we found something like filename
             "
@@ -1299,7 +1314,7 @@ function! <SID>GetDirsAndFilesFromProjectFile(projectFile, projectName)
    endfor
 
    " if there's dir-mode then let's set pathsForCtags = pathsRoot
-   if (s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+   if (<SID>_UseDirsInsteadOfFiles(s:dVimprjRoots[ s:curVimprjKey ]))
       for l:sKey in keys(l:dResult)
          let l:dResult[l:sKey].pathsForCtags = l:dResult[l:sKey].pathsRoot
       endfor
@@ -1593,7 +1608,7 @@ function! <SID>OnFileOpen()
 
          let l:iProjectsAddedCnt = 0
          let l:lProjects = []
-         if (s:dVimprjRoots[ s:curVimprjKey ].enableWhenProjectDirFound || s:dVimprjRoots[ s:curVimprjKey ].useDirsInsteadOfFiles)
+         if (s:dVimprjRoots[ s:curVimprjKey ].enableWhenProjectDirFound || <SID>_UseDirsInsteadOfFiles(s:dVimprjRoots[ s:curVimprjKey ]))
             " режим директорий
             for l:sCurProjName in keys(s:dProjFilesParsed[ l:sProjFileKey ]["projects"])
                let l:boolFound = 0
@@ -1714,7 +1729,7 @@ endfunction
 "                                             INIT
 " ************************************************************************************************
 
-let s:sIndexerVersion = '3.16'
+let s:sIndexerVersion = '3.17'
 
 " --------- init variables --------
 if !exists('g:indexer_defaultSettingsFilename')
@@ -1831,7 +1846,7 @@ if !exists('g:indexer_ctagsJustAppendTagsAtFileSave')
 endif
 
 if !exists('g:indexer_ctagsDontSpecifyFilesIfPossible')
-   let g:indexer_ctagsDontSpecifyFilesIfPossible = '0'
+   let g:indexer_ctagsDontSpecifyFilesIfPossible = -1
 endif
 
 if !exists('g:indexer_backgroundDisabled')
