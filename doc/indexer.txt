@@ -214,6 +214,9 @@ g:indexer_lookForProjectDir (default: 1)
    settings. You can specify your vimrc in it actually, but it will
    work slow if your vimrc not very small.
 
+   Indexer changes current directory to directory in which .vimprj is found,
+   unless you defined g:indexer_changeCurDirIfVimprjFound = 0 .
+
                                                *indexer_dirNameForSearch*
 g:indexer_dirNameForSearch (default: ".vimprj")
 
@@ -363,6 +366,11 @@ g:indexer_debugLogLevel (default: 0)
 g:indexer_debugLogFilename (default: "")
 
   if not empty and if debug level > 0, then all log writes into this file.
+
+g:indexer_changeCurDirIfVimprjFound (default: 1)
+  
+  if not empty, then Indexer will change current directory to directory in
+  which .vimprj folder is found.
 
 ========================================================================
 COMMANDS                                                  *indexer-commands*

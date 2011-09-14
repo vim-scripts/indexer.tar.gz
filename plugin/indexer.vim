@@ -1,7 +1,7 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Version:     3.17
+" Version:     3.18
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -9,7 +9,7 @@
 
 "TODO:
 "
-"   *) Если есть проекты с одинаковым назpruningapproachванием - нужно показывать варнинг
+"   *) Если есть проекты с одинаковым названием - нужно показывать варнинг
 "   *) Проверять версию ctags при старте:
 "
 "        во-первых, нужно выдавать error, если ctags вообще не установлен.
@@ -430,6 +430,25 @@ function! <SID>RenameFile(filename_old, filename_new)
             \  })
 endfunction
 
+function! <SID>SourceVimprjFiles(sPath)
+   if (!empty(a:sPath))
+      " sourcing all *vim files in .vimprj dir
+      let l:lSourceFilesList = split(glob(a:sPath.'/*vim'), '\n')
+      let l:sThisFile = expand('%:p')
+      for l:sFile in l:lSourceFilesList
+         exec 'source '.l:sFile
+      endfor
+
+   endif
+endfunction
+
+function! <SID>ChangeDirToVimprj(sPath)
+   " переключаем рабочую директорию
+   if (s:indexer_changeCurDirIfVimprjFound)
+      exec "cd ".a:sPath
+   endif
+endfunction
+
 " applies all settings from .vimprj dir
 function! <SID>ApplyVimprjSettings(sVimprjKey)
 
@@ -443,15 +462,9 @@ function! <SID>ApplyVimprjSettings(sVimprjKey)
       exec 'source '.s:indexer_defaultSettingsFilename
    endif
 
-   if (!empty(s:dVimprjRoots[ a:sVimprjKey ].path))
-      " sourcing all *vim files in .vimprj dir
-      let l:lSourceFilesList = split(glob(s:dVimprjRoots[ a:sVimprjKey ]["path"].'/*vim'), '\n')
-      let l:sThisFile = expand('%:p')
-      for l:sFile in l:lSourceFilesList
-         exec 'source '.l:sFile
-      endfor
+   call <SID>SourceVimprjFiles(s:dVimprjRoots[ a:sVimprjKey ]["path"])
+   call <SID>ChangeDirToVimprj(s:dVimprjRoots[ a:sVimprjKey ]["cd_path"])
 
-   endif
 
    "let l:sTmp .= "===".&ts
    "let l:tmp2 = input(l:sTmp)
@@ -461,9 +474,6 @@ function! <SID>ApplyVimprjSettings(sVimprjKey)
       exec "set tags+=". s:dProjFilesParsed[ l:lFileProjs.file ]["projects"][ l:lFileProjs.name ]["tagsFilenameEscaped"]
       exec "set path+=".s:dProjFilesParsed[ l:lFileProjs.file ]["projects"][ l:lFileProjs.name ]["sPathsAll"]
    endfor
-
-   " переключаем рабочую директорию
-   exec "cd ".s:dVimprjRoots[ a:sVimprjKey ]["cd_path"]
 
    call <SID>_AddToDebugLog(s:DEB_LEVEL__ALL, 'function end: __ApplyVimprjSettings__', {})
 endfunction
@@ -1488,7 +1498,7 @@ function! <SID>OnFileOpen()
       while (l:i < s:indexer_recurseUpCount)
          if (isdirectory(expand('%:p:h').l:sCurPath.'/'.s:indexer_dirNameForSearch))
             let $INDEXER_PROJECT_ROOT = simplify(expand('%:p:h').l:sCurPath)
-            exec 'cd '.substitute($INDEXER_PROJECT_ROOT, ' ', '\\ ', 'g')
+            "exec 'cd '.substitute($INDEXER_PROJECT_ROOT, ' ', '\\ ', 'g')
             break
          endif
          let l:sCurPath = l:sCurPath.'/..'
@@ -1507,15 +1517,20 @@ function! <SID>OnFileOpen()
 
 
          " sourcing all *vim files in .vimprj dir
-         let l:lSourceFilesList = split(glob($INDEXER_PROJECT_ROOT.'/'.s:indexer_dirNameForSearch.'/*vim'), '\n')
-         let l:sThisFile = expand('%:p')
-         for l:sFile in l:lSourceFilesList
-            exec 'source '.l:sFile
-         endfor
+         "let l:lSourceFilesList = split(glob($INDEXER_PROJECT_ROOT.'/'.s:indexer_dirNameForSearch.'/*vim'), '\n')
+         "let l:sThisFile = expand('%:p')
+         "for l:sFile in l:lSourceFilesList
+            "exec 'source '.l:sFile
+         "endfor
+         call <SID>SourceVimprjFiles($INDEXER_PROJECT_ROOT.'/'.s:indexer_dirNameForSearch)
+         call <SID>ChangeDirToVimprj(substitute($INDEXER_PROJECT_ROOT, ' ', '\\ ', 'g'))
 
          let l:sNewVimprjKey = <SID>GetKeyFromPath($INDEXER_PROJECT_ROOT)
          call <SID>AddNewVimprjRoot(l:sNewVimprjKey, $INDEXER_PROJECT_ROOT, $INDEXER_PROJECT_ROOT)
          "exec 'cd '.substitute($INDEXER_PROJECT_ROOT, ' ', '\\ ', 'g')
+
+         "call confirm(s:dVimprjRoots[l:sNewVimprjKey].path)
+         "call <SID>ApplyVimprjSettings(l:sNewVimprjKey)
 
          " проверяем, не открыли ли мы файл из директории .vimprj
          let l:sPathToDirNameForSearch = $INDEXER_PROJECT_ROOT.'/'.s:indexer_dirNameForSearch
@@ -1729,7 +1744,7 @@ endfunction
 "                                             INIT
 " ************************************************************************************************
 
-let s:sIndexerVersion = '3.17'
+let s:sIndexerVersion = '3.18'
 
 " --------- init variables --------
 if !exists('g:indexer_defaultSettingsFilename')
@@ -1806,6 +1821,11 @@ else
    endif
 endif
 
+if !exists('g:indexer_changeCurDirIfVimprjFound')
+   let s:indexer_changeCurDirIfVimprjFound = 1
+else
+   let s:indexer_changeCurDirIfVimprjFound = g:indexer_changeCurDirIfVimprjFound
+endif
 
 
 
