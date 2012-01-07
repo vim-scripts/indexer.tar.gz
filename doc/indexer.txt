@@ -21,6 +21,11 @@ to email me: dimon.frank@gmail.com
          Troubleshooting.....|indexer-troubleshooting|
          Thanks.......................|indexer-thanks|
 
+
+Since Indexer version 4.0 there is a dependency: plugin vimprj ( goo.gl/gJfgR )
+Functionality of the vimprj plugin has been implemented in Indexer earlier,
+but now Indexer functionality is divided in two plugins: Indexer and Vimprj.
+
 You can use this plugin to automatically index your project files 
 using ctags. This can be very useful when it's used together with plugins
 omnicppcomplete (for c, c++ development), code_complete.vim
@@ -126,10 +131,9 @@ You have two projects: "project1" and "project2", and you use
    Indexer changes &tags back to ~/.indexer_files_tags/project2 .
 
 So, you should not care about your projects. It just works. If you
-have some projects with subprojects, i recommend you use .vimprj directory
+have some projects with subprojects, i recommend you to use .vimprj directory
 with specific settings for your project, in which you can set any 
-options such as &tags, &tabstop, etc. More detailed: read about option
-g:indexer_lookForProjectDir .
+options such as &tags, &tabstop, etc. More detailed: read :help vimprj
 
 Actually, Indexer sets &path for needed project when you swith to new 
 buffer, not only &tags.
@@ -157,75 +161,6 @@ OPTIONS                                                  *indexer-options*
 
 You can set these variables in your vimrc file before the plugin is loaded to
 change its default behavior
-
-                                               *indexer_lookForProjectDir*
-g:indexer_lookForProjectDir (default: 1)
-
-   if on, then plugin will recursively-up search for ".vimprj" directory.
-   If it will be found, then plugin will source all "*.vim" files in it,
-   and also will set environment variable $INDEXER_PROJECT_ROOT to
-   directory in which is ".vimprj" directory.
-   
-   Your directory tree example:
-
-      | home
-      | | user
-      | | | myproject
-      | | | | src
-      | | | | |-file1.c
-      | | | | |-file2.c
-      | | | | |-file3.c
-      | | | | |
-      | | | | inc
-      | | | | |-file1.h
-      | | | | |-file2.h
-      | | | | |-file3.h
-      | | | | |
-      | | | | .vimprj
-      | | | | |-conf.vim
-
-   For example, you typing: >
-      $ gvim /home/user/myproject/src/file1.c
-----
-
-   Then Indexer will detect your /home/user/myproject/.vimprj directory
-   and source all files *.vim from it,
-   and set $INDEXER_PROJECT_ROOT="/home/user/myproject"
-
-   so, you can define any settings that are individual for
-   your project, such as another .vimprojects file, tabstop, shiftwidth,
-   or any other.
-
-   This is great for people like me, that likes when ALL project files
-   is in only one directory.
-
-   When i need to copy project to another computer i just copying the
-   whole folder, and all is done. I using $INDEXER_PROJECT_ROOT variable
-   in my .vimprojects file, so that i can put project in any place in
-   filesystem, and all files will be indexed, because 
-   $INDEXER_PROJECT_ROOT will be always my real project root.
-
-   If you have several projects with .vimprj directory, then you can open
-   files from each project, and settings will be sourced every time you
-   switch to buffer from another project. So, you might want to have
-   some default settings that will be applied every time before
-   source ".vimprj/*vim" files. There's option 
-   g:indexer_defaultSettingsFilename to set name of file with default
-   settings. You can specify your vimrc in it actually, but it will
-   work slow if your vimrc not very small.
-
-   Indexer changes current directory to directory in which .vimprj is found,
-   unless you defined g:indexer_changeCurDirIfVimprjFound = 0 .
-
-                                               *indexer_dirNameForSearch*
-g:indexer_dirNameForSearch (default: ".vimprj")
-
-   directory name with project settings for search (".vimprj" by default)
-
-                                               *indexer_recurseUpCount*
-g:indexer_recurseUpCount (default: 10)
-
-   count of recurse-up for search ".vimprj" directory
 
                                                *indexer_indexerListFilename*
 g:indexer_indexerListFilename (default: "~/.indexer_files")
@@ -366,11 +301,6 @@ g:indexer_debugLogLevel (default: 0)
 g:indexer_debugLogFilename (default: "")
 
   if not empty and if debug level > 0, then all log writes into this file.
-
-g:indexer_changeCurDirIfVimprjFound (default: 1)
-  
-  if not empty, then Indexer will change current directory to directory in
-  which .vimprj folder is found.
 
 ========================================================================
 COMMANDS                                                  *indexer-commands*
