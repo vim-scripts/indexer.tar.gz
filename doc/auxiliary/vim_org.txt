@@ -1,6 +1,9 @@
-IMPORTANT NOTE: since version 4.00 there is a dependency: plugin vimprj ( http://goo.gl/m8IOD )
-Functionality of the vimprj plugin has been implemented in Indexer earlier, but now Indexer functionality is divided in two plugins: Indexer and Vimprj.
-If you don't need vimprj functionality, just install vimprj and do not use it. It will not disturb you.
+Please note: there's some dependencies:
+1) script-library DfrankUtil (vimscript #3884)
+2) script Vimprj (vimscript #3872)
+
+Functionality of the Vimprj plugin has been implemented in Indexer earlier, but now Indexer functionality is divided in two plugins: Indexer and Vimprj.
+If you don't need Vimprj's functionality, just install Vimprj and do not use it. It will not disturb you.
 -----------------------------------
 
 If you are russian, you might want to read article in russian about this plugin (NOTE: now this artice is deprecated a bit: there's nothing about "vimprj" plugin in it. I'll update it when i have some time): http://goo.gl/7t8WE
@@ -26,7 +29,7 @@ If you don't use project.tar.gz then you can use ".indexer_files" to define proj
 
 Syntax of this file is simple, probably the best way to explain it is to show an example:
 
-NOTE! Since Indexer 4.10 syntax of .indexer_files is changed a bit, to make ctags work much more effectifely.  However, old syntax will work too, for backward compatibility.  If you used Indexer before with .indexer_files, please read this:
+NOTE! Since Indexer 4.10 syntax of .indexer_files is changed a bit, to make ctags work much more effectively.  However, old syntax will work too, for backward compatibility.  If you used Indexer before with .indexer_files, please read this:
 :help indexer-syn-change-4.10
 
 --------------------- example ~/.indexer_files -----------------------

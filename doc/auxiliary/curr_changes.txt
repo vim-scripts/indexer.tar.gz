@@ -1,5 +1,4 @@
-*) Optimized work with .vimprojects file (with project.tar.gz plugin) on rather large projects: now, Indexer generates filelist, stores it into the file and passes it to ctags with "-L" key, instead of passing each file directly in command line. This makes ctags work much faster, because in earlier versions it was called several times with "-a" key if command is too long.
-*) Optimized work with .indexer_files file: syntax of this file changed a bit, to make ctags settings much more effective. However, old syntax works too, for backward compatibility reasons. If you used Indexer before with .indexer_files, then I would strongly recommend you to read :help indexer-syn-change-4.10 .
-*) Added syntax file for .indexer_files .
-If you found a bug, please report it to me.
+*) Optimization: when there's many projects available, opening new file was too slow. Now this is solved.
+*) Please download latest Vimprj script (vimscript #3872), latest version is 1.06 now.
+*) Yet another dependency added: script-library DfrankUtil (vimscript #3884). Sorry if you are bored by these dependencies, but now i really need to put my common code in one place.
 

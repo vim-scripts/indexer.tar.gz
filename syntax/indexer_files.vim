@@ -8,8 +8,8 @@ elseif exists("b:current_syntax")
    finish
 endif
 
-" shut case off
-syn case ignore
+" turn case on
+syn case match
 
 syn match  indexer_files_label         "^.\{-}="
 syn region indexer_files_header        start="^\[" end="\]" contains=indexer_files_string,indexer_files_identifier

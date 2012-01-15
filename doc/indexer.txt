@@ -14,6 +14,7 @@ to email me: dimon.frank@gmail.com
                                           *indexer* *indexer-plugin*
 	Contents:
 
+     Dependencies..........................|indexer-dependencies|
      Options....................................|indexer-options|
      Commands..................................|indexer-commands|
      Background..............................|indexer-background|
@@ -24,9 +25,9 @@ to email me: dimon.frank@gmail.com
      Thanks......................................|indexer-thanks|
 
 
-Since Indexer version 4.0 there is a dependency: plugin vimprj ( goo.gl/gJfgR )
-Functionality of the vimprj plugin has been implemented in Indexer earlier,
-but now Indexer functionality is divided in two plugins: Indexer and Vimprj.
+Please note: there's some dependencies. Please read |indexer-dependencies|.
+
+                                  * * *
 
 You can use this plugin to automatically index your project files 
 using ctags. This can be very useful when it's used together with plugins
@@ -152,6 +153,14 @@ actually, you can make alias for this command, or something.
 If servername is empty, then plugin will work anyway, but you need
 to wait while ctags work. This is not really bad at rather small projects.
 
+
+========================================================================
+DEPENDENCIES                                        *indexer-dependencies*
+
+You need to download the following scripts to work with this plugin:
+
+Vimprj         ( http://www.vim.org/scripts/script.php?script_id=3872 )
+DfrankUtil     ( http://www.vim.org/scripts/script.php?script_id=3884 )
 
 ========================================================================
 OPTIONS                                                  *indexer-options*
