@@ -71,6 +71,13 @@ In this way, each directory in ~/workspace will be interpreted as separate
 project, and you can open any file from any project in ~/workspace, and the 
 whole proper project will be indexed.
 
+
+Please note: suggested ctags options is tested with ctags 5.8. As far as i
+know, option --languages is marked as deprecated in ctags 5.9, but i still did
+not test it, because the latest version on http://ctags.sourceforge.net is
+still 5.8. I hope i will have time for this soon.
+
+
 Indexer 3.0 and later supports open several files from several projects. For example, a little story.
 
 You have two projects: "project1" and "project2", and you use "~/.indexer_files".

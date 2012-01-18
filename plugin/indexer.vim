@@ -1,7 +1,7 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Version:     4.11
+" Version:     4.12
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -211,7 +211,7 @@ endif
 
 " all dependencies is ok
 
-let g:iIndexerVersion = 411
+let g:iIndexerVersion = 412
 let g:loaded_indexer  = 1
 
 
@@ -483,8 +483,8 @@ function! g:vimprj#dHooks['OnAddNewVimprjRoot']['indexer'](dParams)
 
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer'] = {}
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["useSedWhenAppend"]                 = g:indexer_useSedWhenAppend
-   let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["indexerListFilename"]              = g:indexer_indexerListFilename
-   let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["projectsSettingsFilename"]         = g:indexer_projectsSettingsFilename
+   let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["indexerListFilename"]              = expand(g:indexer_indexerListFilename)
+   let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["projectsSettingsFilename"]         = expand(g:indexer_projectsSettingsFilename)
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["projectName"]                      = g:indexer_projectName
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["enableWhenProjectDirFound"]        = g:indexer_enableWhenProjectDirFound
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["ctagsCommandLineOptions"]          = g:indexer_ctagsCommandLineOptions
@@ -501,6 +501,7 @@ endfunction
 
 function! g:vimprj#dHooks['SetDefaultOptions']['indexer'](dParams)
    let g:indexer_useSedWhenAppend                 = s:def_useSedWhenAppend
+   let g:indexer_indexerListFilename              = s:def_indexerListFilename
    let g:indexer_projectsSettingsFilename         = s:def_projectsSettingsFilename
    let g:indexer_projectName                      = s:def_projectName
    let g:indexer_enableWhenProjectDirFound        = s:def_enableWhenProjectDirFound
@@ -2224,8 +2225,8 @@ endif
 
 
 let s:def_useSedWhenAppend                  = g:indexer_useSedWhenAppend
-let s:def_indexerListFilename               = g:indexer_indexerListFilename
-let s:def_projectsSettingsFilename          = g:indexer_projectsSettingsFilename
+let s:def_indexerListFilename               = expand(g:indexer_indexerListFilename)
+let s:def_projectsSettingsFilename          = expand(g:indexer_projectsSettingsFilename)
 let s:def_projectName                       = g:indexer_projectName
 let s:def_enableWhenProjectDirFound         = g:indexer_enableWhenProjectDirFound
 let s:def_ctagsCommandLineOptions           = g:indexer_ctagsCommandLineOptions

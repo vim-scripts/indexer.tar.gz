@@ -5,14 +5,14 @@
 
 
                      By Dmitry Frank
-		            dimon.frank@gmail.com
+                  dimon.frank@gmail.com
 
 Firstly: if you have any questions about this plugin, feel free
 to email me: dimon.frank@gmail.com
 
 
                                           *indexer* *indexer-plugin*
-	Contents:
+   Contents:
 
      Dependencies..........................|indexer-dependencies|
      Options....................................|indexer-options|
@@ -438,6 +438,11 @@ Indexer. I would recommend you to examine firstly these two options: >
    --languages=[+|-]<list>
    --langmap=<map>[,<map[...]>]
 You can read ctags help here: http://ctags.sourceforge.net/ctags.html
+
+Please note: suggested ctags options is tested with ctags 5.8. As far as i
+know, option --languages is marked as deprecated in ctags 5.9, but i still did
+not test it, because the latest version on http://ctags.sourceforge.net is
+still 5.8. I hope i will have time for this soon.
 
 Filters in PROJECTS_PARENT is also not needed now.
 Actually (between ourselves) all these filters (in usual projects and
