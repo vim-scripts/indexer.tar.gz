@@ -314,6 +314,19 @@ g:indexer_backgroundDisabled (default: 0)
   is solved in Indexer 3.14, but i don't know where i face same 
   troubles again =)
 
+                                                      *indexer_vimExecutable*
+g:indexer_vimExecutable (default: '*auto*')
+
+  Indexer needs to execute Vim when tags generation is done, to achieve
+  background asynchronous tags generation.
+
+  If this variable has default value '*auto*', then Indexer will try to detect
+  executable name automatically: on MacVim it should be "mvim", on all other 
+  systems it should be "vim".
+
+  If you need your custom vim to be executed, specify it in this variable.
+   
+
                                                       *indexer_debugLogLevel*
 g:indexer_debugLogLevel (default: 0)
 
@@ -492,5 +505,6 @@ There's some people i'd like to say thanks for help with make Indexer better:
 * Thiago Bellini
 * Shi Haipend 
 * Alexander Pazdnikov
+* Asis Hallab
 
  vim:ft=help:tw=78:  

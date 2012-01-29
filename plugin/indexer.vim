@@ -1,7 +1,7 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Version:     4.12
+" Version:     4.13
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -211,7 +211,7 @@ endif
 
 " all dependencies is ok
 
-let g:iIndexerVersion = 412
+let g:iIndexerVersion = 413
 let g:loaded_indexer  = 1
 
 
@@ -553,7 +553,10 @@ if has("win32") || has("win64")
          let l:cmd .= " & ".a:vim_cmd
       endif
 
-      silent exec "!start /MIN cmd /c \"".l:cmd."\""
+      let l:sFullCmd = "!start /MIN cmd /c \"".l:cmd."\""
+      let s:sLastOSCmd = l:sFullCmd
+
+      silent exec l:sFullCmd
    endfunction
 else
    " Works in linux (Ubuntu 10.04)
@@ -565,7 +568,10 @@ else
          let l:cmd .= " ; ".a:vim_cmd
       endif
 
-      silent exec "! (".l:cmd.") &"
+      let l:sFullCmd = "! (".l:cmd.") &"
+      let s:sLastOSCmd = l:sFullCmd
+
+      silent exec l:sFullCmd
    endfunction
 endif
 
@@ -584,7 +590,18 @@ function! <SID>IndexerAsyncCommand(command, vim_func)
 
       let vim_cmd = ""
       if !empty(a:vim_func)
-         let vim_cmd = "vim --servername ".v:servername." --remote-expr \"" . a:vim_func . "('" . temp_file . "')\" "
+
+         if g:indexer_vimExecutable == '*auto*'
+            if has('mac')
+               let sVimExecutable = 'mvim'
+            else
+               let sVimExecutable = 'vim'
+            endif
+         else
+            let sVimExecutable = g:indexer_vimExecutable
+         endif
+
+         let vim_cmd = sVimExecutable." --servername ".v:servername." --remote-expr \"" . a:vim_func . "('" . temp_file . "')\" "
       endif
 
       call <SID>IndexerAsync_Impl(tool_cmd, vim_cmd)
@@ -727,8 +744,9 @@ function! <SID>IndexerDebugInfo()
    echo '* Ctags boolCtagsExists: '.s:dCtagsInfo['boolCtagsExists']
    echo '* Ctags boolPatched: '.s:dCtagsInfo['boolPatched']
    echo '* Ctags versionFirstLine: '.s:dCtagsInfo['versionFirstLine']
-   echo '* Ctags last command: "'.s:sLastCtagsCmd.'"'
-   echo '* Ctags last output: "'.s:sLastCtagsOutput.'"'
+   echo '* OS last command: '.s:sLastOSCmd.''
+   echo '* Ctags last command: '.s:sLastCtagsCmd.''
+   echo '* Ctags last output: '.s:sLastCtagsOutput.''
 endfunction
 
 
@@ -2223,6 +2241,10 @@ if !exists('g:indexer_ctagsWriteFilelist')
    let g:indexer_ctagsWriteFilelist = 1
 endif
 
+if !exists('g:indexer_vimExecutable')
+   let g:indexer_vimExecutable = '*auto*'
+endif
+
 
 let s:def_useSedWhenAppend                  = g:indexer_useSedWhenAppend
 let s:def_indexerListFilename               = expand(g:indexer_indexerListFilename)
@@ -2264,6 +2286,7 @@ if empty(s:dCtagsInfo['boolCtagsExists'])
    echomsg "Indexer error: Exuberant Ctags not found in PATH. You need to install Ctags to make Indexer work."
 endif
 
+let s:sLastOSCmd =         "** no OS commands yet **"
 let s:sLastCtagsCmd =      "** no ctags commands yet **"
 let s:sLastCtagsOutput =   "** no output yet **"
 

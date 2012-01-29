@@ -1,4 +1,4 @@
-*) Optimization: when there's many projects available, opening new file was too slow. Now this is solved.
-*) Please download latest Vimprj script (vimscript #3872), latest version is 1.06 now.
-*) Yet another dependency added: script-library DfrankUtil (vimscript #3884). Sorry if you are bored by these dependencies, but now i really need to put my common code in one place.
+*) MacVim is now supported. Thanks to Asis Hallab for bugreport and for help to fix it.
+*) Added new option g:indexer_vimExecutable, it is needed if you want your
+custom vim to be executed instead of standard "vim" (or "mvim" on MacVim).
 

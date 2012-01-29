@@ -1,0 +1,10 @@
+
+test_project=$INDEXER_PROJECT_ROOT {
+ main.c
+ main.h
+ some_folder_1=some_folder_1 {
+  some_header.c
+  some_header.h
+ }
+}
+

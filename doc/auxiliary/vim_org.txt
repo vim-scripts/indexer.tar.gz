@@ -103,7 +103,15 @@ Actually, Indexer sets &path for needed project when you swith to new buffer, no
 
 ----
 
-I have tested it both on Linux and Windows XP, in Vim 7.3
+It is successfully tested on Vim 7.3, on the following systems:
+*) Archlinux
+*) Ubuntu 10.4
+*) Windows XP
+*) Mac OS X Lion
+
+Please, if you have another system configuration and all works fine for you, 
+please send to me your configuration, i'll update text on this page.
+
 If you have any troubles using this plugin, feel free to email me.
 You also can contact me in irc:
 server: irc.freenode.net
