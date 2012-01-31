@@ -1,7 +1,7 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Version:     4.13
+" Version:     4.14
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -211,7 +211,7 @@ endif
 
 " all dependencies is ok
 
-let g:iIndexerVersion = 413
+let g:iIndexerVersion = 414
 let g:loaded_indexer  = 1
 
 
@@ -220,6 +220,12 @@ let g:loaded_indexer  = 1
 " ************************************************************************************************
 
 function! <SID>SetTagsAndPath(iFileNum, sVimprjKey)
+
+   " before changing tags and path, let's restore default ones.
+   "  (NOT global defaults, but default for current .vimprj root)
+   let &tags = g:vimprj#dRoots[ a:sVimprjKey ]['indexer']['sTagsDefault']
+   let &path = g:vimprj#dRoots[ a:sVimprjKey ]['indexer']['sPathDefault']
+
    for l:lFileProjs in g:vimprj#dFiles[ a:iFileNum ]["projects"]
       exec "set tags+=". s:dProjFilesParsed[ l:lFileProjs.file ]["projects"][ l:lFileProjs.name ]["tagsFilenameEscaped"]
       if g:vimprj#dRoots[ a:sVimprjKey ]['indexer']["handlePath"]
@@ -231,6 +237,9 @@ endfunction
 function! g:vimprj#dHooks['ApplySettingsForFile']['indexer'](dParams)
    " для каждого проекта, в который входит файл, добавляем tags и path
    let l:sVimprjKey = vimprj#getVimprjKeyOfFile( a:dParams['iFileNum'] )
+
+   " TODO: maybe, change current directory to the first pathsRoot?
+   "       (of course, this should be optional feature. default 0, imo)
 
    call <SID>SetTagsAndPath(a:dParams['iFileNum'], l:sVimprjKey)
 
@@ -408,13 +417,20 @@ function! g:vimprj#dHooks['OnFileOpen']['indexer'](dParams)
                      " user just opened file from subdir of project l:sCurProjName. 
                      " We should add it to result lists
 
-                     if l:iProjectsAddedCnt == 0
+                     "if l:iProjectsAddedCnt == 0
                         call <SID>AddNewProjectToCurFile(l:sProjFileKey, l:sCurProjName, l:iFileNum)
-                     endif
+                     "endif
                      let l:iProjectsAddedCnt = l:iProjectsAddedCnt + 1
                      call add(l:lProjects, l:sCurProjName)
-                     break " because just one project for file is supported now, so, break.
+                     break
                   endif
+
+                  " just one project for each file is supported, so, break.
+                  "  COMMENTED: because we need to use better project
+                  "if l:iProjectsAddedCnt > 0
+                     "break
+                  "endif
+
                endfor
 
             endfor
@@ -426,23 +442,109 @@ function! g:vimprj#dHooks['OnFileOpen']['indexer'](dParams)
                   " user just opened file from project l:sCurProjName. We should add it to
                   " result lists
 
-                  if l:iProjectsAddedCnt == 0
+                  "if l:iProjectsAddedCnt == 0
                      call <SID>AddNewProjectToCurFile(l:sProjFileKey, l:sCurProjName, l:iFileNum)
-                  endif
+                  "endif
                   let l:iProjectsAddedCnt = l:iProjectsAddedCnt + 1
                   call add(l:lProjects, l:sCurProjName)
-                  break " because just one project for file is supported now, so, break.
+                  "break " because just one project for file is supported now, so, break.
+                  "  COMMENTED: because we need to use better project
 
                endif
             endfor
 
          endif
 
+         " check all the projects, if one of them is a subdir of another
+         " one, then remove parent, leave the nested one only.
+
          if (l:iProjectsAddedCnt > 1)
-            " it should never happen,
-            " because just one project for file is supported now, so,
-            " we break when first project is found.
-            echoerr "Warning: file '".l:sFilename."' exists in several projects: '".join(l:lProjects, ', ')."'. Only first is indexed."
+            let boolCheckNested = 1 " need to check again all the projects
+
+            while boolCheckNested && l:iProjectsAddedCnt > 1
+               let boolCheckNested = 0
+               for i in range(0, len(l:lProjects) - 1 - 1)
+
+                  for j in range(1, len(l:lProjects) - 1)
+
+                     " comparing root paths for two projects
+
+                     let lPathsRoot_i = s:dProjFilesParsed[ l:sProjFileKey ]["projects"][ l:lProjects[i] ]["pathsRoot"]
+                     let lPathsRoot_j = s:dProjFilesParsed[ l:sProjFileKey ]["projects"][ l:lProjects[j] ]["pathsRoot"]
+
+                     " need to make two passes:
+                     " 1) check if ALL project's root paths are in subdir of
+                     "    any ONE dir of another project
+                     " 2) swap projects and check the same again
+
+                     for iPassNum in range(0, 1)
+
+                        if iPassNum == 0
+                           let iOuterPrjNum = i
+                           let lPathsRoot_1 = lPathsRoot_i
+                           let lPathsRoot_2 = lPathsRoot_j
+                        elseif iPassNum == 1
+                           let iOuterPrjNum = j
+                           let lPathsRoot_1 = lPathsRoot_j
+                           let lPathsRoot_2 = lPathsRoot_i
+                        endif
+
+                        for sCurPathRoot_1 in lPathsRoot_1
+                           let boolSubdir = 1
+                           for sCurPathRoot_2 in lPathsRoot_2
+                              if !dfrank#util#IsFileInSubdirSimple(sCurPathRoot_2, sCurPathRoot_1)
+                                 let boolSubdir = 0
+                                 break
+                              endif
+                           endfor
+                           if boolSubdir
+
+                              " project '2' is in subdir of project '1'!
+                              " so, remove project '1'
+                              unlet l:lProjects[iOuterPrjNum]
+                              unlet g:vimprj#dFiles[ l:iFileNum ]["projects"][iOuterPrjNum]
+                              let l:iProjectsAddedCnt = l:iProjectsAddedCnt - 1
+
+                              let boolCheckNested = 1 " need to check again all the projects
+                              break
+                           endif
+                        endfor
+
+                        if boolCheckNested
+                           break
+                        endif
+
+                     endfor
+
+
+                     if boolCheckNested
+                        break
+                     endif
+
+                  endfor
+
+                  if boolCheckNested
+                     break
+                  endif
+
+               endfor
+            endwhile
+         endif
+
+
+
+         " COMMENTED: because i don't remember why did i disallow to index 
+         " several projects for one file.
+         if 0
+            if (l:iProjectsAddedCnt > 1)
+               if empty(g:indexer_disableMultProjWarning)
+                  call confirm("Indexer warning: file '".l:sFilename."' exists in several projects: '".join(l:lProjects, ', ')."'. Only first is indexed. \n\nIf you want to disable this warning, please set option g:indexer_disableMultProjWarning=1")
+               endif
+
+               let l:lProjects = [ l:lProjects[0] ]
+               let g:vimprj#dFiles[ l:iFileNum ]["projects"] = [ g:vimprj#dFiles[ l:iFileNum ]["projects"][0] ]
+
+            endif
          endif
 
 
@@ -471,8 +573,6 @@ function! g:vimprj#dHooks['OnFileOpen']['indexer'](dParams)
 
    endif " if l:sProjFileKey != ""
 
-   "call <SID>SetTagsAndPath(l:iFileNum, l:sVimprjKey)
-
    call <SID>_AddToDebugLog(s:DEB_LEVEL__PARSE, 'function end: __OnFileOpen__', {})
 endfunction
 
@@ -495,6 +595,10 @@ function! g:vimprj#dHooks['OnAddNewVimprjRoot']['indexer'](dParams)
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["ctagsWriteFilelist"]               = g:indexer_ctagsWriteFilelist
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["mode"]                             = ""
    let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["getAllSubdirsFromIndexerListFile"] = g:indexer_getAllSubdirsFromIndexerListFile
+   
+   " remember default tags after sourcing .vimprj
+   let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["sTagsDefault"]                     = &tags
+   let g:vimprj#dRoots[ l:sVimprjKey ]['indexer']["sPathDefault"]                     = &path
 
 endfunction
 
@@ -517,6 +621,7 @@ function! g:vimprj#dHooks['SetDefaultOptions']['indexer'](dParams)
       let $INDEXER_PROJECT_ROOT = simplify(a:dParams['sVimprjDirName'].'/..')
    endif
 
+   " before sourcing .vimprj, let's restore default tags and path
    let &tags = s:sTagsDefault
    let &path = s:sPathDefault
 
@@ -848,7 +953,7 @@ function! <SID>Indexer_ParseCommandOutput(sOutput)
       " ctags output should be empty.
       " if it is not, then we should show warning
       if len(matchlist(s:sLastCtagsOutput, "[a-zA-Z0-9_а-яА-Я.,-=!\\/]")) > 0
-         if empty(s:indexer_disableCtagsWarning)
+         if empty(g:indexer_disableCtagsWarning)
             let l:iMaxCmdLenToShow = 200
             if strlen(s:sLastCtagsCmd) > l:iMaxCmdLenToShow
                let l:sCtagsCmd = strpart(s:sLastCtagsCmd, 0, l:iMaxCmdLenToShow)."....(cutted, to see full command, type :IndexerDebugInfo)"
@@ -889,20 +994,22 @@ function! <SID>AddNewProjectToCurFile(sProjFileKey, sProjName, iFileNum)
 endfunction
 
 function! <SID>IndexerFilesList()
-   if (<SID>_UseDirsInsteadOfFiles(g:vimprj#dRoots[ g:vimprj#sCurVimprjKey ]['indexer']))
-      echo "option g:indexer_ctagsDontSpecifyFilesIfPossible is ON. So, Indexer knows nothing about files."
-   else
-      if len(g:vimprj#dFiles[ g:vimprj#iCurFileNum ]["projects"]) > 0
-         echo "* Files indexed: ".join(
-                  \  s:dProjFilesParsed 
-                  \      [ g:vimprj#dFiles[ g:vimprj#iCurFileNum ]["projects"][0]["file"] ]
-                  \      [ "projects" ]
-                  \      [ g:vimprj#dFiles[ g:vimprj#iCurFileNum ]["projects"][0]["name"] ]
-                  \      ["files"] 
-                  \  )
+   if len(g:vimprj#dFiles[ g:vimprj#iCurFileNum ]["projects"]) > 0
+
+      let lFiles = 
+               \s:dProjFilesParsed
+                  \[ g:vimprj#dFiles[ g:vimprj#iCurFileNum ]["projects"][0]["file"] ]
+                  \[ "projects" ]
+                  \[ g:vimprj#dFiles[ g:vimprj#iCurFileNum ]["projects"][0]["name"] ]
+                  \["files"] 
+
+      if (len(lFiles) == 0)
+         echo "Indexer knows nothing about files passed to ctags. Type :IndexerInfo for more info."
       else
-         echo "There's no projects indexed."
+         echo "* Files indexed: ".join(lFiles)
       endif
+   else
+      echo "There's no projects indexed."
    endif
 endfunction
 
@@ -936,6 +1043,12 @@ function! <SID>IndexerInfo()
       let l:sPathsForCtags .= join(l:dCurProject.pathsForCtags, ', ')
       let l:iFilesCnt += len(l:dCurProject.files)
       let l:iFilesNotFoundCnt += len(l:dCurProject.not_exist)
+
+      if l:iFilesCnt < 20
+         let l:sFilesForCtags = join(l:dCurProject.files, ', ')
+      else
+         let l:sFilesForCtags = 'there''s '.l:iFilesCnt.' files. Type :IndexerFiles for list.'
+      endif
 
    endfor
 
@@ -981,15 +1094,13 @@ function! <SID>IndexerInfo()
          echo '* Background tags generation: NO. '.<SID>_GetBackgroundComment()
       endif
       echo '* Projects indexed: '.l:sProjects
-      if (!<SID>_UseDirsInsteadOfFiles(g:vimprj#dRoots[ g:vimprj#sCurVimprjKey ]['indexer']))
-         echo "* Files indexed: there's ".l:iFilesCnt.' files. Type :IndexerFiles for list.'
-         " Type :IndexerFiles to list'
-         echo "* Files not found: there's ".l:iFilesNotFoundCnt.' non-existing files. ' 
-         ".join(s:dParseGlobal.not_exist, ', ')
-      endif
-
       echo "* Root paths: ".l:sPathsRoot
       echo "* Paths for ctags: ".l:sPathsForCtags
+      echo "* Files for ctags: ".l:sFilesForCtags
+      if (!<SID>_UseDirsInsteadOfFiles(g:vimprj#dRoots[ g:vimprj#sCurVimprjKey ]['indexer']))
+         echo "* Files not found: there's ".l:iFilesNotFoundCnt.' non-existing files. ' 
+      endif
+
 
       echo '* Paths (with all subfolders): '.&path
       echo '* Tags file: '.&tags
@@ -1386,22 +1497,23 @@ endfunction
 " ************************************************************************************************
 
 " возвращает dictionary:
-" dResult[<название_проекта_1>][files]
-"                              [wildcards]
-"                              [sFilelistFile]
-"                              [paths]
-"                              [not_exist]
-"                              [pathsForCtags]
-"                              [pathsRoot]
-"                              [options]
-" dResult[<название_проекта_2>][files]
-"                              [wildcards]
-"                              [sFilelistFile]
-"                              [paths]
-"                              [not_exist]
-"                              [pathsForCtags]
-"                              [pathsRoot]
-"                              [options]
+" dResult[<название_проекта_1>] [files]
+"                               [wildcards]
+"                               [sFilelistFile]
+"                               [paths]
+"                               [not_exist]
+"                               [pathsForCtags]
+"                               [pathsRoot]
+"                               [options]
+"
+" dResult[<название_проекта_2>] [files]
+"                               [wildcards]
+"                               [sFilelistFile]
+"                               [paths]
+"                               [not_exist]
+"                               [pathsForCtags]
+"                               [pathsRoot]
+"                               [options]
 " ...
 "
 " параметры:                             
@@ -1529,7 +1641,8 @@ function! <SID>GetDirsAndFilesFromIndexerList(aLines, indexerFile, dExistsResult
 
                   for l:sPrj in l:lProjects
                      if (isdirectory(l:sPrj))
-                        call add(l:lIndexerFilesList, '['.substitute(l:sPrj, '^.*[\\/]\([^\\/]\+\)$', '\1', '').']')
+                        "call add(l:lIndexerFilesList, '['.substitute(l:sPrj, '^.*[\\/]\([^\\/]\+\)$', '\1', '').']')
+                        call add(l:lIndexerFilesList, '['.l:sPrj.']')
 
                         " adding options
                         for l:sCurOptionKey in keys(l:dProjectsParentOptions)
@@ -1749,7 +1862,7 @@ endfunction
 " project file
 function! <SID>GetDirsAndFilesFromIndexerFile(indexerFile, dIndexerParams)
 
-   if empty(s:indexer_disableIndexerFilesDirsWarning)
+   if empty(g:indexer_disableIndexerFilesDirsWarning)
       if !<SID>_UseDirsInsteadOfFiles(a:dIndexerParams)
          call confirm ("Indexer warning: you use .indexer_files in FILES mode, this is deprecated, inefficient mode. Please read the following:\n:help indexer-syn-change-4.10 \n:help indexer_ctagsDontSpecifyFilesIfPossible\n\n and reconfigure your .indexer_files . \n\nIf you want to disable this warning, please set option g:indexer_disableIndexerFilesDirsWarning=1")
       endif
@@ -2137,18 +2250,6 @@ else
    let s:indexer_maxOSCommandLen = g:indexer_maxOSCommandLen
 endif
 
-if !exists('g:indexer_disableCtagsWarning')
-   let s:indexer_disableCtagsWarning = 0
-else
-   let s:indexer_disableCtagsWarning = g:indexer_disableCtagsWarning
-endif
-
-if !exists('g:indexer_disableIndexerFilesDirsWarning')
-   let s:indexer_disableIndexerFilesDirsWarning = 0
-else
-   let s:indexer_disableIndexerFilesDirsWarning = g:indexer_disableIndexerFilesDirsWarning
-endif
-
 if !exists('g:indexer_debugLogLevel')
    let s:indexer_debugLogLevel = 0
 else
@@ -2176,6 +2277,21 @@ else
       exec ':redir END'
    endif
 endif
+
+
+if !exists('g:indexer_disableCtagsWarning')
+   let g:indexer_disableCtagsWarning = 0
+endif
+
+if !exists('g:indexer_disableMultProjWarning')
+   let g:indexer_disableMultProjWarning = 0
+endif
+
+if !exists('g:indexer_disableIndexerFilesDirsWarning')
+   let g:indexer_disableIndexerFilesDirsWarning = 0
+endif
+
+
 
 "if !exists('g:indexer_changeCurDirIfVimprjFound')
 "let s:indexer_changeCurDirIfVimprjFound = 1
@@ -2305,7 +2421,7 @@ let s:DEB_LEVEL__ASYNC  = 1
 let s:DEB_LEVEL__PARSE  = 2
 let s:DEB_LEVEL__ALL    = 3
 
-" запоминаем начальные &tags, &path
+" remember default &tags, &path
 let s:sTagsDefault = &tags
 let s:sPathDefault = &path
 

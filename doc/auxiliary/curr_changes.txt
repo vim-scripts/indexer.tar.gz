@@ -1,4 +1,13 @@
-*) MacVim is now supported. Thanks to Asis Hallab for bugreport and for help to fix it.
-*) Added new option g:indexer_vimExecutable, it is needed if you want your
-custom vim to be executed instead of standard "vim" (or "mvim" on MacVim).
+*) Nested projects is now supported. If one project is a subdir(s) of another
+   one, then only nested project will be used for inner files.  This will also
+   work for PROJECTS_PARENT. I mean, you can set up your .indexer_files just like
+   that:
+
+[PROJECTS_PARENT]
+~/dev
+~/dev/SomeProject
+
+and then each dir in ~/dev will be a separat project, and each dir in ~/dev/SomeProject will also be sepate project.
+
+*) Some bugfix.
 

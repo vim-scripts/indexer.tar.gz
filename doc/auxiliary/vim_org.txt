@@ -106,7 +106,8 @@ Actually, Indexer sets &path for needed project when you swith to new buffer, no
 It is successfully tested on Vim 7.3, on the following systems:
 *) Archlinux
 *) Ubuntu 10.4
-*) Windows XP
+*) Freebsd
+*) Windows XP SP3
 *) Mac OS X Lion
 
 Please, if you have another system configuration and all works fine for you, 
