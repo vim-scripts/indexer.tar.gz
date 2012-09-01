@@ -1,7 +1,7 @@
 "=============================================================================
 " File:        indexer.vim
 " Author:      Dmitry Frank (dimon.frank@gmail.com)
-" Version:     4.14
+" Version:     4.15
 "=============================================================================
 " See documentation in accompanying help file
 " You may use this code in whatever way you see fit.
@@ -81,31 +81,6 @@
 "     ["versionFirstLine"] - output for ctags --version, but first line only.
 "
 "
-" TODO: move this description to vimprj plugin
-"
-" g:vimprj#dRoots - DICTIONARY with info about $INDEXER_PROJECT_ROOTs
-"     [  <$INDEXER_PROJECT_ROOT>  ] - DICTIONARY KEY
-"        ["cd_path"] - path for CD. Can't be empty.
-"        ["proj_root"] - $INDEXER_PROJECT_ROOT. Can be empty (for "default")
-"        ["path"] - path to .vimprj dir. Actually, this is
-"                   "proj_root"."/.vimprj", if "proj_root" isn't empty.
-"        ["mode"] - "IndexerFile" or "ProjectFile"
-"        ..... - many indexer options like "indexerListFilename", etc.
-"
-"
-" g:vimprj#dFiles - DICTIONARY with info about all regular files
-"     [  <bufnr('%')>  ] - DICTIONARY KEY
-"        ["sVimprjKey"] - key for g:vimprj#dRoots
-"        ["projects"] - LIST 
-"                             NOTE!!!
-"                             At this moment only ONE project
-"                             is allowed for each file
-"           [0, 1, 2, ...] - LIST KEY. At this moment, only 0 is available
-"              ["file"] - key for s:dProjFilesParsed
-"              ["name"] - name of project
-"           
-
-"        
 "  
 
 if v:version < 700
@@ -115,7 +90,7 @@ endif
 
 " Dependencies
 
-let s:iVimprj_min_version = 106
+let s:iVimprj_min_version = 108
 let s:iDfrankUtil_min_version = 100
 
 " Dependency functions
@@ -211,7 +186,7 @@ endif
 
 " all dependencies is ok
 
-let g:iIndexerVersion = 414
+let g:iIndexerVersion = 415
 let g:loaded_indexer  = 1
 
 
@@ -224,7 +199,9 @@ function! <SID>SetTagsAndPath(iFileNum, sVimprjKey)
    " before changing tags and path, let's restore default ones.
    "  (NOT global defaults, but default for current .vimprj root)
    let &tags = g:vimprj#dRoots[ a:sVimprjKey ]['indexer']['sTagsDefault']
-   let &path = g:vimprj#dRoots[ a:sVimprjKey ]['indexer']['sPathDefault']
+   if g:vimprj#dRoots[ a:sVimprjKey ]['indexer']["handlePath"]
+      let &path = g:vimprj#dRoots[ a:sVimprjKey ]['indexer']['sPathDefault']
+   endif
 
    for l:lFileProjs in g:vimprj#dFiles[ a:iFileNum ]["projects"]
       exec "set tags+=". s:dProjFilesParsed[ l:lFileProjs.file ]["projects"][ l:lFileProjs.name ]["tagsFilenameEscaped"]
@@ -258,9 +235,28 @@ function! g:vimprj#dHooks['NeedSkipBuffer']['indexer'](dParams)
 
    " skip specified projecs file (g:indexer_projectsSettingsFilename)
    if exists("g:vimprj#sCurVimprjKey")
-      if l:sFilename == a:dParams['dVimprjRootParams'].projectsSettingsFilename
+
+      "let sTmp = s:def_projectsSettingsFilename
+      "if exists("a:dParams['dVimprjRootParams']")
+         "let sTmp = a:dParams['dVimprjRootParams'].projectsSettingsFilename
+      "endif
+      
+      "if l:sFilename == lTmp
+         "return 1
+      "endif
+
+
+      " we do not take a:dParams['dVimprjRootParams'].projectsSettingsFilename
+      " because in this hook these settings are taken from PREVIOUS file,
+      " not new one, so this is completely wrong.
+      " To be honest, we need to make s:def_projectsSettingsFilename not
+      " changeable between different projects.
+
+      if l:sFilename == s:def_projectsSettingsFilename
          return 1
       endif
+
+
    endif
 
    return 0
@@ -793,9 +789,12 @@ function! Indexer_OnAsyncCommandComplete(temp_file_name)
 
    call <SID>Indexer_ParseCommandOutput(l:sCmdOutput)
 
-   "exec "split " . a:temp_file_name
-   "wincmd w
-   "redraw
+   if !has("gui_running")
+      " clear and redraw to remove screen clear 
+      " after running external program
+      redraw!
+   endif
+   return ""
 
 endfunction
 
@@ -1023,6 +1022,8 @@ function! <SID>IndexerInfo()
    let l:sPathsForCtags = ""
    let l:iFilesCnt = 0
    let l:iFilesNotFoundCnt = 0
+
+   let l:sFilesForCtags = ""
 
    for l:lProjects in g:vimprj#dFiles[ g:vimprj#iCurFileNum ]["projects"]
       let l:dCurProject = s:dProjFilesParsed[ l:lProjects.file ]["projects"][ l:lProjects.name ]
@@ -1578,8 +1579,8 @@ function! <SID>GetDirsAndFilesFromIndexerList(aLines, indexerFile, dExistsResult
                   if (len(l:dirNameMatch) > 0)
                      " get name of directory
 
-                     let l:sDirName = simplify(a:indexerFile.'/../'.l:dirNameMatch[1])
-                     let l:sDirName = dfrank#util#GetPathLastItem(l:sDirName)
+                     let l:sDirName = simplify(fnamemodify(a:indexerFile, ":p:h").'/'.l:dirNameMatch[1])
+                     let l:sDirName = fnamemodify(l:sDirName, ":t")
                      let l:sProjName = substitute(l:sProjName, l:sPatternTmpVar, l:sDirName, '')
                   else
                      let l:sProjName = substitute(l:sProjName, l:sPatternTmpVar, '_unknown_var_', '')
@@ -1642,7 +1643,12 @@ function! <SID>GetDirsAndFilesFromIndexerList(aLines, indexerFile, dExistsResult
                   for l:sPrj in l:lProjects
                      if (isdirectory(l:sPrj))
                         "call add(l:lIndexerFilesList, '['.substitute(l:sPrj, '^.*[\\/]\([^\\/]\+\)$', '\1', '').']')
-                        call add(l:lIndexerFilesList, '['.l:sPrj.']')
+
+                        let l:sPrjName = l:sPrj
+                        if g:indexer_shortProjParentNames
+                           let l:sPrjName = fnamemodify(l:sPrjName, ':t')
+                        endif
+                        call add(l:lIndexerFilesList, '['.l:sPrjName.']')
 
                         " adding options
                         for l:sCurOptionKey in keys(l:dProjectsParentOptions)
@@ -2289,6 +2295,10 @@ endif
 
 if !exists('g:indexer_disableIndexerFilesDirsWarning')
    let g:indexer_disableIndexerFilesDirsWarning = 0
+endif
+
+if !exists('g:indexer_shortProjParentNames')
+   let g:indexer_shortProjParentNames = 0
 endif
 
 
