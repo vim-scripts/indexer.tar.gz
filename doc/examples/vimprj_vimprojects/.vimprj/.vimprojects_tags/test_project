@@ -1,0 +1,20 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+S_TestStruct1	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^typedef struct S_TestStruct1 {$/;"	s
+S_TestStruct1::one	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^   int one;$/;"	m	struct:S_TestStruct1	access:public
+S_TestStruct1::two	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^   int two;$/;"	m	struct:S_TestStruct1	access:public
+T_TestStruct1	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^} T_TestStruct1;$/;"	t	typeref:struct:S_TestStruct1
+main	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/main.c	/^int main()$/;"	f
+my_func_1	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.c	/^int my_func_1()$/;"	f
+my_func_1	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^extern int my_func_1();$/;"	p	signature:()
+my_func_2	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.c	/^int my_func_2()$/;"	f
+my_func_2	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^extern int my_func_2();$/;"	p	signature:()
+my_global_int	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/main.c	/^int  my_global_int;$/;"	v
+my_global_long	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/main.c	/^long my_global_long;$/;"	v
+my_test_struct	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/main.c	/^T_TestStruct1 my_test_struct;$/;"	v
+one	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^   int one;$/;"	m	struct:S_TestStruct1	access:public
+two	/usr/share/vim/vimfiles/bundle/indexer/doc/examples/vimprj_vimprojects/some_folder_1/some_header.h	/^   int two;$/;"	m	struct:S_TestStruct1	access:public

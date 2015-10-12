@@ -1,6 +1,8 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=3221
 
-If you are russian, you might want to read article in russian about this plugin (NOTE: now this artice is deprecated a bit: there's nothing about "vimprj" plugin in it. I'll update it when i have some time): http://goo.gl/7t8WE
+
+I've published a detailed article about Indexer + Vimprj usage, you might want to read it: http://dmitryfrank.com/articles/vim_project_code_navigation
+
 -----------------------------------
 
 This plugin can work in two ways:

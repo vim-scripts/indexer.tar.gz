@@ -1,14 +1,14 @@
 *indexer.txt* Plugin for automatically index project files using ctags
-              and keep tags up-to-date.
-              For Vim 7.x version
+            and keep tags up-to-date.
+            For Vim 7.x version
 
 
 
                      By Dmitry Frank
-                  dimon.frank@gmail.com
+                   mail@dmitryfrank.com
 
 Firstly: if you have any questions about this plugin, feel free
-to email me: dimon.frank@gmail.com
+to email me: mail@dmitryfrank.com
 
 
                                           *indexer* *indexer-plugin*
@@ -25,7 +25,7 @@ to email me: dimon.frank@gmail.com
      Thanks......................................|indexer-thanks|
 
 
-Please note: there's some dependencies. Please read |indexer-dependencies|.
+Please note: there're some dependencies. Please read |indexer-dependencies|.
 
                                   * * *
 
@@ -314,6 +314,20 @@ g:indexer_backgroundDisabled (default: 0)
   is solved in Indexer 3.14, but i don't know where i face same 
   troubles again =)
 
+                                         *indexer_dontUpdateTagsIfFileExists*
+g:indexer_dontUpdateTagsIfFileExists (default: 0)
+
+  If 0 (default), Indexer will re-generate tags when the project is opened for
+  the first time in the particular Vim session (since Indexer has no reliable
+  way to check whether tags are up-to-date: checking dates of every single
+  file in vimscript will probably be even slower than just generate new tags).
+
+  But for some really large projects (say, Linux Kernel) it may be unwanted,
+  so, if this option is set to 1, and tags file already exists, Indexer
+  won't generate tags until you save any file from project.
+
+
+
                                                       *indexer_vimExecutable*
 g:indexer_vimExecutable (default: '*auto*')
 
@@ -346,6 +360,7 @@ g:indexer_debugLogLevel (default: 0)
 g:indexer_debugLogFilename (default: "")
 
   if not empty and if debug level > 0, then all log writes into this file.
+
 
 ========================================================================
 COMMANDS                                                  *indexer-commands*
@@ -495,7 +510,8 @@ You can always see the last ctags command by typing >
 ========================================================================
 THANKS                                                  *indexer-thanks*
 
-There's some people i'd like to say thanks for help with make Indexer better:
+There are some people I'd like to say thanks for helping me to make Indexer
+better:
 
 * Makoto Nokata
 * Julian Kooij
